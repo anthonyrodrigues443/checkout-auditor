@@ -34,7 +34,7 @@ from agent.harness import (  # noqa: E402
 )
 from checker.score import score_run  # noqa: E402
 from report.build_report import (  # noqa: E402
-    CSS, LIMITS, comparison_rows, enrich, esc, load_runs, repro_block, rupees, run_section,
+    COMPARISON_MODELS, CSS, LIMITS, comparison_rows, enrich, esc, load_runs, repro_block, rupees, run_section,
 )
 import report.build_report as build_report  # noqa: E402
 
@@ -678,7 +678,7 @@ async def api_run_detail(run_id: str):
 @app.get("/api/eval")
 async def api_eval():
     rs = all_runs_enriched()
-    prod = [r for r in rs if r.get("mode") in ("prod", "cli")]
+    prod = [r for r in rs if r.get("mode") in ("prod", "cli") and r.get("model") in COMPARISON_MODELS]
     rows, per_level, levels = comparison_rows(prod)
     return {"title": f"Offline eval on {repro_block(prod, levels)['stores']} seeded stores", "rows": rows,
             "per_level": {m: {lv: {"cleared": c[0], "runs": c[1]} for lv, c in cell.items()} for m, cell in per_level.items()},

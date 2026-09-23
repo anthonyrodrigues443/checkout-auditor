@@ -216,7 +216,8 @@ def comparison_rows(prod: list[dict]) -> tuple[list[dict], dict, list]:
     levels = sorted({str(r["level"]) for r in prod}, key=lambda s: (len(s), s))
     rows = []
     per_level = {}
-    for model, rs in sorted(by_model.items()):
+    order = {m: i for i, m in enumerate(COMPARISON_MODELS)}
+    for model, rs in sorted(by_model.items(), key=lambda kv: (order.get(kv[0], 99), kv[0])):
         scored = [r for r in rs if r.get("_score")]
         cleared_levels = [str(r["level"]) for r in scored if r["_score"].get("level_cleared")]
         highest = max(cleared_levels, key=lambda s: (len(s), s)) if cleared_levels else "none"
@@ -274,7 +275,7 @@ def divergence_suite(prod: list[dict]) -> dict:
     Selected post hoc by outcome, so it is a lens on where models differ, not the eval itself; the full table above
     is the eval. Per-model totals are cleared/runs over exactly these cells."""
     cells, levels, variants = variant_cells(prod)
-    models = sorted({k[0] for k in cells})
+    models = sorted({k[0] for k in cells}, key=lambda m: (COMPARISON_MODELS.index(m) if m in COMPARISON_MODELS else 99, m))
     picked, hard = [], []
     for lv in levels:
         for v in variants:
@@ -345,6 +346,7 @@ def repro_block(prod: list[dict], levels: list) -> dict:
     }
 
 
+COMPARISON_MODELS = ("claude-fable-5-1", "claude-fable-5", "claude-opus-5")  # the launch-table set; other models' runs stay in runs/ and in the per-run sections
 EVAL_MODES = ("prod", "cli")  # prod = API key; cli = deliberate comparison runs over the Claude Code login. test = debug, excluded.
 
 LIMITS = [
@@ -352,17 +354,17 @@ LIMITS = [
     "The agent has no typing tool, so flows that need an address or login typed in are out of scope.",
     "A single run per cell is one observation, not a rate; repeats are shown as k/n and are only meaningful where n > 1.",
     "Findings depend on what the model reports at each checkpoint; Python does the sums, the model does the reading.",
-    "Debug runs (mode test) are excluded from the comparison; runs stamped cli went through the Claude Code login rather than the API key and are labelled in the reproducibility block.",
+    "The comparison set is Fable 5.1, Fable 5 and Opus 5; runs on any other model stay in runs/ and in the per-run sections but are not in the table. Debug runs (mode test) are excluded from the comparison; runs stamped cli went through the Claude Code login rather than the API key and are labelled in the reproducibility block.",
 ]
 
 
 def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
-    prod = [r for r in runs if r.get("mode") in EVAL_MODES]
-    test = [r for r in runs if r.get("mode") not in EVAL_MODES]
+    prod = [r for r in runs if r.get("mode") in EVAL_MODES and r.get("model") in COMPARISON_MODELS]
+    test = [r for r in runs if r not in prod]
     rows, per_level, levels = comparison_rows(prod)
     repro = repro_block(prod, levels)
     n_stores = repro["stores"]
-    parts = [f"<h1>Checkout Auditor · internal eval</h1><div class='muted'>generated {datetime.now().isoformat(timespec='seconds')} · {len(runs)} run records ({len(prod)} in the table, {len(test)} debug runs excluded)</div>"]
+    parts = [f"<h1>Checkout Auditor · internal eval</h1><div class='muted'>generated {datetime.now().isoformat(timespec='seconds')} · {len(runs)} run records ({len(prod)} in the table; {len(test)} excluded: debug runs and models outside the comparison set)</div>"]
     parts.append(f"<h2>Offline eval on {n_stores} seeded stores</h2>")
     parts.append("<table><tr><th>model</th><th>runs</th><th>highest level cleared</th><th>caught/seeded</th><th>false alarms on L1</th><th>stopped at Pay</th><th>completed</th><th>avg steps</th><th>avg seconds</th><th>avg cost $</th></tr>")
     for r in rows:
@@ -374,7 +376,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
                  "Scores below are cleared/runs over exactly these cells; the full table above is the eval.</div>")
     if ds["cells"]:
         parts.append("<table><tr><th>model</th><th>cleared/runs on the divergence suite</th></tr>" + "".join(
-            f"<tr><td>{esc(m)}</td><td><b>{c}/{n}</b></td></tr>" for m, (c, n) in sorted(ds["totals"].items())) + "</table>")
+            f"<tr><td>{esc(m)}</td><td><b>{ds['totals'][m][0]}/{ds['totals'][m][1]}</b></td></tr>" for m in ds["models"]) + "</table>")
         parts.append("<table><tr><th>store</th><th>wording</th>" + "".join(f"<th>{esc(m)}</th>" for m in ds["models"]) + "</tr>" + "".join(
             f"<tr><td>L{esc(lv)}</td><td>{esc(v)}</td>" + "".join((f"<td>{have[m][0]}/{have[m][1]}</td>" if m in have else "<td>·</td>") for m in ds["models"]) + "</tr>"
             for lv, v, have in ds["cells"]) + "</table>")
@@ -390,7 +392,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
     cells, vlevels, variants = variant_cells(prod)
     if len(variants) > 1:
         parts.append("<h3>By task wording (cleared/runs)</h3><table><tr><th>model</th><th>wording</th>" + "".join(f"<th>L{esc(l)}</th>" for l in vlevels) + "</tr>")
-        for m in sorted({k[0] for k in cells}):
+        for m in sorted({k[0] for k in cells}, key=lambda m: (COMPARISON_MODELS.index(m) if m in COMPARISON_MODELS else 99, m)):
             for v in variants:
                 if not any((m, l, v) in cells for l in vlevels):
                     continue
@@ -428,7 +430,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
            "Selected by outcome: a cell is one store × one task wording with at least two models run, at least one clearing it and at least one failing it. "
            "Scores are cleared/runs over exactly these cells; the full table above is the eval.", ""]
     if ds["cells"]:
-        md += ["| model | cleared/runs on the divergence suite |", "|---|---|"] + [f"| {m} | **{c}/{n}** |" for m, (c, n) in sorted(ds["totals"].items())]
+        md += ["| model | cleared/runs on the divergence suite |", "|---|---|"] + [f"| {m} | **{ds['totals'][m][0]}/{ds['totals'][m][1]}** |" for m in ds["models"]]
         md += ["", "| store | wording | " + " | ".join(ds["models"]) + " |", "|---|---|" + "---|" * len(ds["models"])] + [
             f"| L{lv} | {v} | " + " | ".join((f"{have[m][0]}/{have[m][1]}" if m in have else "·") for m in ds["models"]) + " |" for lv, v, have in ds["cells"]]
     else:
@@ -440,7 +442,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
         md.append(f"| {m} | " + " | ".join(f"{cell[l][0]}/{cell[l][1]}" for l in levels) + " |")
     if len(variants) > 1:
         md += ["", "## By task wording (cleared/runs)", "", "| model | wording | " + " | ".join(f"L{l}" for l in vlevels) + " |", "|---|---|" + "---|" * len(vlevels)]
-        for m in sorted({k[0] for k in cells}):
+        for m in sorted({k[0] for k in cells}, key=lambda m: (COMPARISON_MODELS.index(m) if m in COMPARISON_MODELS else 99, m)):
             for v in variants:
                 if not any((m, l, v) in cells for l in vlevels):
                     continue
