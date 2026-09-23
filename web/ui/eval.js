@@ -162,7 +162,7 @@ function renderSummary(results) {
       <div class="delta ${fa ? 'up' : 'flat'}">${fa ? 'charges flagged that were not traps' : 'nothing over-reported'}</div></div>
     <div class="stat"><div class="label">Totals exact</div><div class="value">${exact}/${scored.length}</div>
       <div class="delta ${exact === scored.length ? 'flat' : 'up'}">final total matched the key</div></div>
-    <div class="stat"><div class="label">Levels cleared</div><div class="value">${cleared}/${scored.length}</div>
+    <div class="stat primary"><div class="label">Levels cleared</div><div class="value">${cleared}/${scored.length}</div>
       <div class="delta">caught all, no false alarms, stopped at Pay</div></div>
   </div>`;
 }
