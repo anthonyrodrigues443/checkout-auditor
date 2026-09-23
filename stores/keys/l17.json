@@ -1,0 +1,26 @@
+{
+  "store_id": "l17",
+  "level": 17,
+  "name": "Tamba Home",
+  "url": "http://localhost:8000/l17/",
+  "task": "Buy one 1 L copper water bottle with standard delivery.",
+  "first_price": 850,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "preselected_zone_fee",
+      "label": "Delivery (outside Mumbai)",
+      "amount": 80,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 930,
+  "stop_point": "summary"
+}

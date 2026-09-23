@@ -35,6 +35,8 @@ from gen2 import STORES as STORES2  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES2})
 from gen3 import STORES as STORES3  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES3})
+from gen4 import STORES as STORES4  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES4})
 
 
 # ---------- server ----------
@@ -158,7 +160,13 @@ def walk(browser, key, base, cfg):
         cart_total = page.inner_text("#order-total")
         # a coupon box, when present, is left alone: never click #coupon-button
         page.click("#next-button")
-        page.wait_for_url(re.compile(r".*/(gift|options)\.html$"))
+        page.wait_for_url(re.compile(r".*/(gift|options|before)\.html$"))
+
+        if page.url.endswith("before.html"):
+            # an offer page between cart and options: decline it, as the task asks for nothing extra
+            extra_pages += 1
+            page.click("#continue-button")
+            page.wait_for_url("**/options.html")
 
         if page.url.endswith("gift.html"):
             gift_seen = True
@@ -180,6 +188,9 @@ def walk(browser, key, base, cfg):
             current = page.eval_on_selector("#payment-select", "el => el.value")
             if current != choice["payment"]:
                 page.select_option("#payment-select", choice["payment"])
+        if choice.get("zone"):
+            page.select_option("#zone-select", choice["zone"])
+        # a zone select the task says nothing about is left as found
         if page.locator("#protection-check").count():
             found["protection"] = page.is_checked("#protection-check")
         if page.locator("#membership-check").count():

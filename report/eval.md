@@ -1,13 +1,13 @@
 # Offline eval on 16 seeded stores
 
-Generated 2026-09-23T18:52:15 from 82 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T18:54:35 from 98 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
 | claude-fable-5 | 8 | 8 | 11/11 | 0 (n=1) | 8/8 | 8/8 | 12.6 | 32.8 | 0.176 |
 | claude-fable-5-1 | 4 | 4 | 4/4 | 0 (n=1) | 4/4 | 4/4 | 11.8 | 35.5 | 0.176 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
-| claude-opus-5 | 67 | 16 | 105/105 | 0 (n=5) | 67/67 | 67/67 | 13.9 | 34.1 | 0.097 |
+| claude-opus-5 | 83 | 16 | 128/128 | 0 (n=5) | 83/83 | 83/83 | 14.0 | 34.4 | 0.098 |
 
 ## Level cleared per level (cleared/runs)
 
@@ -16,7 +16,7 @@ Generated 2026-09-23T18:52:15 from 82 runs (debug test-mode runs excluded; crede
 | claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
 | claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
 | claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 4/4 | 4/4 | 4/4 | 4/4 | 2/2 | 2/2 | 2/2 | 2/2 |
+| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
 
 ## Reproducibility
 
@@ -56,8 +56,6 @@ Generated 2026-09-23T18:52:15 from 82 runs (debug test-mode runs excluded; crede
  ],
  "runs_per_cell": [
   1,
-  2,
-  4,
   5,
   6
  ],

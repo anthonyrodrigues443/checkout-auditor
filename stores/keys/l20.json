@@ -1,0 +1,26 @@
+{
+  "store_id": "l20",
+  "level": 20,
+  "name": "Linen Loft",
+  "url": "http://localhost:8000/l20/",
+  "task": "Buy one double cotton bedsheet set with standard delivery.",
+  "first_price": 999,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 40
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "price_change",
+      "label": "Cotton Bedsheet Set (Double)",
+      "amount": 300,
+      "scored": true,
+      "pattern": "bait and switch"
+    }
+  ],
+  "expected_final_total": 1339,
+  "stop_point": "summary"
+}

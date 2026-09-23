@@ -1,0 +1,33 @@
+{
+  "store_id": "l19",
+  "level": 19,
+  "name": "Decibel Depot",
+  "url": "http://localhost:8000/l19/",
+  "task": "Buy one 20 W portable Bluetooth speaker with standard delivery.",
+  "first_price": 1750,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 45
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Handling",
+      "amount": 25,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "upsell_interstitial",
+      "label": "Extended warranty",
+      "amount": 199,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 1820,
+  "stop_point": "summary"
+}

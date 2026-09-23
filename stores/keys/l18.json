@@ -1,0 +1,33 @@
+{
+  "store_id": "l18",
+  "level": 18,
+  "name": "Bulb Street",
+  "url": "http://localhost:8000/l18/",
+  "task": "Buy one foldable LED desk lamp with standard delivery.",
+  "first_price": 1000,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 0
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "undisclosed_tax",
+      "label": "GST (18%)",
+      "amount": 180,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "pre_ticked_addon",
+      "label": "Tip your delivery partner",
+      "amount": 20,
+      "scored": true,
+      "pattern": "basket sneaking"
+    }
+  ],
+  "expected_final_total": 1200,
+  "stop_point": "summary"
+}
