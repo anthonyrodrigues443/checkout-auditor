@@ -228,7 +228,7 @@ function renderSummary(sub) {
     <div class="stat"><div class="label">Tasks with findings</div><div class="value">${affected}<span class="muted" style="font-size:15px"> / ${perTask.length}</span></div>
       <div class="delta ${affected ? 'up' : 'flat'}">${affected ? 'hid something from the shopper' : 'all clean'}</div></div>
 
-    <div class="stat"><div class="label">Unchosen charges</div><div class="value">${rs(added)}</div>
+    <div class="stat primary"><div class="label">Unchosen charges</div><div class="value">${rs(added)}</div>
       <div class="delta ${added > 0 ? 'up' : 'flat'}">${charges.length
         ? `${charges.length} charge${charges.length === 1 ? '' : 's'} the shopper never picked`
         : 'nothing added to the bill'}</div></div>
