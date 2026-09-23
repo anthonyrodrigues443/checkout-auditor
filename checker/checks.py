@@ -177,7 +177,12 @@ def _action_texts(actions) -> list[tuple]:
         if not isinstance(a, dict) or a.get("tool") not in ("click", "select_option") or a.get("blocked"):
             continue
         args = a.get("args") or {}
-        for t in (a.get("element_text"), args.get("option_text"), args.get("text")):
+        if a.get("tool") == "select_option":
+            # only the option the agent chose; element_text carries the select's label plus every option
+            texts = (args.get("option_text"),)
+        else:
+            texts = (a.get("element_text"), args.get("text"))
+        for t in texts:
             if t:
                 out.append((a.get("step"), str(t)))
     return out

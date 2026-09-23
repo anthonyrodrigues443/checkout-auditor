@@ -1,22 +1,22 @@
-# Offline eval on 11 seeded stores
+# Offline eval on 12 seeded stores
 
-Generated 2026-09-23T18:47:30 from 61 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T18:49:01 from 62 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
 | claude-fable-5 | 8 | 8 | 11/11 | 0 (n=1) | 8/8 | 8/8 | 12.6 | 32.8 | 0.176 |
 | claude-fable-5-1 | 4 | 4 | 4/4 | 0 (n=1) | 4/4 | 4/4 | 11.8 | 35.5 | 0.176 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
-| claude-opus-5 | 46 | 11 | 67/67 | 0 (n=5) | 46/46 | 46/46 | 13.0 | 32.1 | 0.09 |
+| claude-opus-5 | 47 | 12 | 71/71 | 0 (n=5) | 47/47 | 47/47 | 13.2 | 32.6 | 0.092 |
 
 ## Level cleared per level (cleared/runs)
 
-| model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 |
-| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 1/1 | 1/1 | 1/1 |
+| model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 1/1 | 1/1 | 1/1 | 1/1 |
 
 ## Reproducibility
 
@@ -40,7 +40,7 @@ Generated 2026-09-23T18:47:30 from 61 runs (debug test-mode runs excluded; crede
  "prompt_commit": "821c3e2",
  "sdk": "0.2.158",
  "date": "2026-09-23",
- "stores": 11,
+ "stores": 12,
  "trap_types": 9,
  "trap_type_names": [
   "cod_surcharge",
@@ -58,7 +58,7 @@ Generated 2026-09-23T18:47:30 from 61 runs (debug test-mode runs excluded; crede
   5,
   6
  ],
- "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 --repeats 1 && .venv/bin/python -m report.build_report"
+ "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 12 --repeats 1 && .venv/bin/python -m report.build_report"
 }
 ```
 
