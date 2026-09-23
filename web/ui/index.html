@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout Auditor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🧾</text></svg>">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Checkout Auditor</h1>
+    <span class="sub">Paste a store URL and what to buy. The agent shops, stops before paying, and reports what it was charged.</span>
+    <nav class="tabs">
+      <a href="index.html" aria-current="page">Audit</a>
+      <a href="eval.html">Eval</a>
+    </nav>
+  </header>
+
+  <div id="health"></div>
+
+  <section class="card">
+    <h2>Tasks</h2>
+    <p class="hint">One row per shopping task. Tick <b>show browser</b> on a row to watch that run happen in a visible window.</p>
+    <div class="rows" id="rows"></div>
+    <div class="actions">
+      <button class="secondary small" id="add" type="button">+ Add task</button>
+      <button class="ghost small" id="load-stores" type="button">Load seeded stores</button>
+      <button class="ghost small" id="clear" type="button">Clear</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Models</h2>
+    <div class="models" id="models"><span class="muted">loading…</span></div>
+  </section>
+
+  <div class="actions">
+    <button id="go" type="button">Run audit</button>
+    <span class="spacer"></span>
+    <span class="muted" id="go-note"></span>
+  </div>
+
+  <div id="error"></div>
+
+  <section class="card" id="progress" hidden>
+    <h2>Progress</h2>
+    <div id="progress-head"></div>
+    <div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+    <div id="jobs"></div>
+  </section>
+
+  <h2 id="results-heading" style="font-size:16px;margin:26px 0 12px" hidden>Report</h2>
+  <div id="results"></div>
+
+</div>
+<script src="api.js"></script>
+<script src="submit.js"></script>
+</body>
+</html>

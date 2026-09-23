@@ -708,6 +708,12 @@ REPORT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/runs", StaticFiles(directory=str(RUNS_DIR)), name="runs")
 app.mount("/report", StaticFiles(directory=str(REPORT_DIR)), name="report")
 
+# The real UI: static pages that call the JSON API above, same origin so no CORS on the demo path.
+# /ui/ is the audit page, /ui/eval.html the eval page. The reference pages at / and /eval stay put.
+UI_DIR = Path(__file__).resolve().parent / "ui"
+if UI_DIR.is_dir():
+    app.mount("/ui", StaticFiles(directory=str(UI_DIR), html=True), name="ui")
+
 
 if __name__ == "__main__":
     import uvicorn
