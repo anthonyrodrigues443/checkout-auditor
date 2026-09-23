@@ -1,6 +1,6 @@
 # Checkout Auditor
 
-A browser agent that walks an online checkout for a given shopping task, records the visible bill at three checkpoints (first price, cart, final), stops before payment, and hands the checkpoints to plain Python that finds basket sneaking, drip pricing and unexplained gaps. Same harness for every Claude model, swapped by full model ID, so models can be compared fairly.
+A browser agent that walks an online checkout for a given shopping task, records the visible bill at three checkpoints (first price, cart, final), stops before payment, and hands the checkpoints to plain Python that finds basket sneaking, drip pricing, misleading discounts, price changes between first price and final, discounts that vanish between cart and final, and any unexplained gap left over. Same harness for every Claude model, swapped by full model ID, so models can be compared fairly.
 
 ## How it works
 
@@ -78,7 +78,7 @@ See [report/eval.md](report/eval.md). It is an offline eval on seeded stores, no
 ```
 checkout-auditor/
   agent/     tools.py (five Playwright tools), harness.py (SDK loop + run record), prompts.py (shared system prompt), test_surface.py
-  checker/   checks.py (basket sneaking, drip pricing, gap), score.py (score vs answer key), tests/
+  checker/   checks.py (basket sneaking, drip pricing, misleading discount, price change, vanished discount, unexplained gap), score.py (score vs answer key), tests/
   runner/    run.py (models x levels x repeats, parallel, spend cap)
   report/    build_report.py -> index.html, eval.md, audit/<submission>.html
   stores/    gen.py, validate.py, www/ (served l1..l4), keys/ (answer keys, not served)
