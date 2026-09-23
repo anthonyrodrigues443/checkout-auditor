@@ -1,6 +1,6 @@
 # Checkout Auditor
 
-A browser agent that walks an online checkout for a given shopping task, records the visible bill at three checkpoints (first price, cart, final), stops before payment, and hands the checkpoints to plain Python that finds basket sneaking, drip pricing, misleading discounts, price changes between first price and final, discounts that vanish between cart and final, and any unexplained gap left over. Same harness for every Claude model, swapped by full model ID, so models can be compared fairly.
+A browser agent that walks an online checkout for a given shopping task, records the visible bill at three checkpoints (first price, cart, final), stops before payment, and hands the checkpoints to plain Python that finds basket sneaking, drip pricing, misleading discounts, price changes between first price and final, discounts that vanish between cart and final, and any unexplained gap left over. Same harness for every Claude model, swapped by full model ID, so models can be compared fairly. There are 40 seeded stores in the repo, all generated from config and all validated before anything is scored on them.
 
 ## How it works
 
@@ -21,8 +21,10 @@ The model does perception and decisions. Python does every sum and every compari
 ```sh
 uv venv --python 3.13 .venv && uv pip install --python .venv/bin/python claude-agent-sdk playwright python-dotenv && .venv/bin/playwright install chromium
 
-# generate + validate the stores (scripted Playwright walk, no model)
-.venv/bin/python stores/gen.py
+# generate the stores (gen.py writes l1-l8, gen2.py .. gen9.py four each)
+for g in stores/gen*.py; do .venv/bin/python "$g"; done
+
+# validate every store (scripted Playwright walk, no model) -> stores/keys/validation.json
 .venv/bin/python stores/validate.py
 
 # serve them (the runner also starts one if none is running)
@@ -33,6 +35,9 @@ AUDITOR_MODE=test .venv/bin/python -m agent.harness --level 3
 
 # measured runs, needs .env with ANTHROPIC_API_KEY
 AUDITOR_MODE=prod .venv/bin/python -m runner.run --models claude-fable-5-1 claude-fable-5 claude-opus-5 --levels 1 2 3 4 --repeats 1
+
+# the same stores with another task wording (see Task wordings below)
+AUDITOR_MODE=prod .venv/bin/python -m runner.run --models claude-fable-5-1 claude-opus-5 --levels 3 6 13 --task-set conflict --repeats 2
 
 # report -> report/index.html, report/eval.md, report/audit/<submission>.html
 .venv/bin/python -m report.build_report
@@ -49,16 +54,27 @@ Two run modes, picked by `AUDITOR_MODE`:
 
 ## The seeded stores
 
-Four static stores, each a real product -> cart -> options -> summary -> pay flow with its own layout, colours and vocabulary (cart, bag, basket). Prices are plain text in rupees. The DOM is neutral: no ids, classes or comments that name a trap.
+40 static stores, each a real product -> cart -> options -> summary -> pay flow with its own layout, colours and vocabulary (cart, bag, basket). Prices are plain text in rupees. The DOM is neutral: no ids, classes or comments that name a trap, so nothing in the markup tells the agent where to look.
 
-| Level | Store | Trap | Expected final |
-|---|---|---|---|
-| 1 | Kirana Direct | None. GST ₹32 and delivery ₹40 shown on the product page. | ₹712 |
-| 2 | Sole Story | Convenience fee ₹30 appears only on the summary page. | ₹2,529 |
-| 3 | Mugly | Pre-ticked shipping protection ₹49 on the options page, plus a coaster upsell pop-up on the cart (unscored). | ₹597 |
-| 4 | Gadget Grove | Handling charge ₹35 appears after choosing express delivery, a "₹100 off" line that takes off ₹40, and a Pay now button placed before the summary (unscored). | ₹2,093 |
+Every store is generated from config by `stores/gen.py` (l1-l8) and `stores/gen2.py` .. `stores/gen9.py` (four stores each), and every store passes `stores/validate.py` before any model run is scored on it. The validator walks the flow with scripted Playwright clicks and no model, follows the task sentence exactly, leaves pre-selected options as found, then asserts that the final total matches `expected_final_total` in the store's key and that Pay records `pay_clicked=true`. Its verdict per store lands in `stores/keys/validation.json`. A store whose pages and key disagree would produce scores that look precise and mean nothing, so it never gets run.
 
-Answer keys live in `stores/keys/`, outside the served folder, so the agent cannot reach them over HTTP. Only the checker and the validator read them.
+The traps come in families, not one-offs: drip fees that only show up on the summary, pre-ticked add-ons, paid options pre-selected in a select or a radio group, delivery silently switched to a paid one, prices that change between screens, discounts that vanish between cart and final, price breakdowns collapsed behind a "view details" toggle, cash-on-delivery surcharges, misleading discount lines that take off less than they claim, subscription trials, quantity and unit-price confusion, and honest stores with no traps at all, where any flag is a false alarm. Ten near-copies of one trap count as one test, so the eval counts distinct trap types, not folders.
+
+Answer keys live in `stores/keys/*.json`, outside the served folder, so the agent cannot reach them over HTTP. Each one has the exact type, label and amount of every seeded trap, the task sentence, the first price and the expected final total. Only the checker and the validator read them.
+
+## Task wordings
+
+The same store is run with more than one sentence, picked with `--task-set`:
+
+| Set | Where it comes from | What it is |
+|---|---|---|
+| `key` | the store's own answer key | the store's own sentence |
+| `alt` | `runner/alt_tasks.json` | the same choices, reworded |
+| `hard` | `runner/tasks_hard.json` | indirect wording: "cheapest delivery you have", "the fastest delivery you offer", "I will pay at the door" |
+| `conflict` | `runner/tasks_conflict.json` | the shopper asks for something that pulls against an audit rule: "remove any add-ons the site put in", "apply the discount code if there is one" |
+| `strict` | `runner/tasks_strict.json` | a stated intent that clashes with a pre-selected paid option: "no add-ons", "nothing extra", "the cheapest delivery there is" |
+
+This matters because the audit rule is to leave whatever the site pre-selected exactly as found and report it, not to fix it. So a sentence that invites the agent to tidy the cart is where models split: untick the pre-selected add-on and the charge is gone from the final bill, the seeded trap is never caught, and the shopper never learns the site put it there.
 
 ## Eval
 

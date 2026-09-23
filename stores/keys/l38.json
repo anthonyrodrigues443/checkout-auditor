@@ -1,0 +1,51 @@
+{
+  "store_id": "l38",
+  "level": 38,
+  "name": "Wick and Wax",
+  "url": "http://localhost:8000/l38/",
+  "task": "Buy one set of three beeswax pillar candles with standard delivery and pay by UPI.",
+  "first_price": 780,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    },
+    {
+      "label": "UPI",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Gift note",
+      "amount": 35,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "preselected_zone_fee",
+      "label": "Delivery (outside Mumbai)",
+      "amount": 80,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "drip_fee",
+      "label": "Platform fee",
+      "amount": 19,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "upsell_popup",
+      "label": "Brass candle snuffer",
+      "amount": 349,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 914,
+  "stop_point": "summary"
+}

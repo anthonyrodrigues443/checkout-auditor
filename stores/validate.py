@@ -45,6 +45,8 @@ from gen7 import STORES as STORES7  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES7})
 from gen8 import STORES as STORES8  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES8})
+from gen9 import STORES as STORES9  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES9})
 
 
 # ---------- server ----------
@@ -214,7 +216,7 @@ def walk(browser, key, base, cfg):
         current = page.eval_on_selector("#delivery-select", "el => el.value")
         if current != choice["delivery"]:
             page.select_option("#delivery-select", choice["delivery"])
-        if choice.get("payment"):
+        if choice.get("payment") and page.locator("#payment-select").count():
             current = page.eval_on_selector("#payment-select", "el => el.value")
             if current != choice["payment"]:
                 page.select_option("#payment-select", choice["payment"])
@@ -236,7 +238,17 @@ def walk(browser, key, base, cfg):
         if page.locator("#membership-check").count():
             found["membership"] = page.is_checked("#membership-check")
         page.click("#next-button")
-        page.wait_for_url("**/summary.html")
+        page.wait_for_url(re.compile(r".*/(payment|summary)\.html$"))
+
+        if page.url.endswith("payment.html"):
+            # a payment page of its own after delivery: the method the task names is picked here
+            extra_pages += 1
+            if choice.get("payment"):
+                current = page.eval_on_selector("#payment-select", "el => el.value")
+                if current != choice["payment"]:
+                    page.select_option("#payment-select", choice["payment"])
+            page.click("#next-button")
+            page.wait_for_url("**/summary.html")
 
         if page.locator("#details-button").count():
             page.click("#details-button")  # a view toggle, not an option: shows the lines it covers

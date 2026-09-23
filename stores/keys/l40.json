@@ -1,0 +1,22 @@
+{
+  "store_id": "l40",
+  "level": 40,
+  "name": "Stretch Street",
+  "url": "http://localhost:8000/l40/",
+  "task": "Buy one pair of cork yoga blocks with standard delivery.",
+  "first_price": 749,
+  "upfront_charges": [
+    {
+      "label": "Handling",
+      "amount": 0
+    },
+    {
+      "label": "Delivery",
+      "amount": 55
+    }
+  ],
+  "chosen_options": [],
+  "traps": [],
+  "expected_final_total": 804,
+  "stop_point": "summary"
+}

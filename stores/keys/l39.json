@@ -1,0 +1,40 @@
+{
+  "store_id": "l39",
+  "level": 39,
+  "name": "Snooze Supply",
+  "url": "http://localhost:8000/l39/",
+  "task": "Buy one contour memory foam pillow with standard delivery.",
+  "first_price": 1499,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 40
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "price_change",
+      "label": "Contour Memory Foam Pillow",
+      "amount": 300,
+      "scored": true,
+      "pattern": "bait and switch"
+    },
+    {
+      "type": "preselected_option_fee",
+      "label": "Premium box",
+      "amount": 45,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "upsell_interstitial",
+      "label": "Matching cover",
+      "amount": 249,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 1884,
+  "stop_point": "summary"
+}

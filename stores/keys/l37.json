@@ -1,0 +1,26 @@
+{
+  "store_id": "l37",
+  "level": 37,
+  "name": "Clear Cut",
+  "url": "http://localhost:8000/l37/",
+  "task": "Buy one 30 cm handblown glass vase with standard delivery.",
+  "first_price": 1250,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 50
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Delivery insurance",
+      "amount": 69,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 1369,
+  "stop_point": "summary"
+}
