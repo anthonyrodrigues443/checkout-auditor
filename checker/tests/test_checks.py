@@ -453,3 +453,16 @@ def test_estimate_lines_pair_by_head_word_and_traps_match_by_label_before_amount
            "expected_final_total": 470}
     s = score_run(run, key)
     assert s["caught"] == 2 and s["false_alarms"] == 0 and s["level_cleared"], s["verdict_line"]
+
+
+def test_parenthetical_annotations_do_not_pair_unrelated_lines():
+    from checker.checks import check_run, normalise_label
+    assert normalise_label("First order offer (auto-applied by site)") == "first order offer"
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": [_li("Dried Flower Bouquet", 899, chosen=True)], "total": 899},
+                           "cart": {"line_items": [_li("Dried Flower Bouquet", 899, chosen=True), _li("First order offer (auto-applied by site)", -150, pre=True)], "total": 749},
+                           "final": {"line_items": [_li("Dried Flower Bouquet", 899, chosen=True), _li("Card message (pre-ticked by site)", 25, pre=True),
+                                                    _li("Standard delivery", 0, chosen=True), _li("Card convenience fee (payment silently switched)", 29, pre=True)], "total": 953}},
+           "actions": []}
+    kinds = [(f["check"], f["amount"]) for f in check_run(run)["findings"]]
+    assert ("vanished_discount", 150.0) in kinds

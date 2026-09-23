@@ -47,6 +47,7 @@ CCPA_PATTERNS.setdefault("vanished_discount", "bait and switch")
 CCPA_PATTERNS.setdefault("subscription_trap", "subscription trap")
 _SUBSCRIPTION_RE = re.compile(r"\b(month|monthly|year|yearly|annual|trial|renew|renews|subscription|subscribe|membership|auto)\b")
 
+_PAREN_RE = re.compile(r"\([^)]*\)|\[[^\]]*\]")
 _CURRENCY_RE = re.compile(r"₹|\brs\.?|\binr\b")
 _DIGITS_RE = re.compile(r"[\d,]")
 _PUNCT_RE = re.compile(r"[^\w\s]")
@@ -58,6 +59,7 @@ _CURRENCY_NUMBER_RE = re.compile(r"(?:₹|rs\.?|inr)\s*(\d[\d,]*(?:\.\d+)?)", re
 def normalise_label(label) -> str:
     """lowercase, drop currency marks/digits/commas/punctuation, collapse spaces."""
     s = "" if label is None else str(label).lower()
+    s = _PAREN_RE.sub(" ", s)  # agents annotate labels in parentheses ("(auto-applied by site)"); not part of the name
     s = _CURRENCY_RE.sub(" ", s)
     s = _DIGITS_RE.sub("", s)
     s = _PUNCT_RE.sub(" ", s)
