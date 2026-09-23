@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review your order – Crumb Corner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="layout-ledger" data-page="summary">
+<header class="site-header">
+  <a class="brand" href="index.html">Crumb Corner</a>
+  <nav><a href="cart.html">Your box</a></nav>
+</header>
+<main class="shell">
+<h1>Review your order</h1>
+<section class="content">
+<div class="address"><strong>Deliver to</strong><br>Asha Menon, 14 Hill Road, Bandra West, Mumbai 400050<br>+91 98200 12345 · asha@example.com</div><div class="address"><strong>Payment</strong><br><span id="payment-line"></span></div><aside class="order-box">
+  <h2>Order summary</h2>
+  <p class="payable">Amount payable <span id="order-total"></span></p>
+  <button id="details-button" type="button">View price details</button>
+  <div id="details-panel" class="details">
+  <div id="order-lines"></div>
+  <p id="delivery-note" class="small">We upgraded your delivery to Express. <a href="options.html">Change delivery</a></p>
+  </div>
+</aside><p><button id="pay-button" type="button" data-pay>Order and pay</button></p>
+</section>
+</main>
+<footer class="site-footer">Crumb Corner · Mumbai</footer>
+<script src="app.js"></script>
+</body>
+</html>

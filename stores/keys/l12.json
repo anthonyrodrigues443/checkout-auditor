@@ -1,0 +1,51 @@
+{
+  "store_id": "l12",
+  "level": 12,
+  "name": "Crumb Corner",
+  "url": "http://localhost:8000/l12/",
+  "task": "Buy one 500 g dry fruit cake with standard delivery and pay by cash on delivery.",
+  "first_price": 720,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    },
+    {
+      "label": "Cash on delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Greeting card",
+      "amount": 35,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "delivery_switched",
+      "label": "Express delivery",
+      "amount": 89,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "collapsed_fee",
+      "label": "Service fee",
+      "amount": 39,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "cod_surcharge",
+      "label": "Cash handling",
+      "amount": 45,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 928,
+  "stop_point": "summary"
+}

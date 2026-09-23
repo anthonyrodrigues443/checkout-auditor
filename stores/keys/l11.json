@@ -1,0 +1,34 @@
+{
+  "store_id": "l11",
+  "level": 11,
+  "name": "Loom Room",
+  "url": "http://localhost:8000/l11/",
+  "task": "Buy one handloom cotton kurta with standard delivery.",
+  "first_price": 1299,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 0
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "price_change",
+      "label": "Handloom Cotton Kurta",
+      "amount": 50,
+      "scored": true,
+      "pattern": "bait and switch"
+    },
+    {
+      "type": "vanished_discount",
+      "label": "Welcome offer",
+      "amount": 100,
+      "scored": true,
+      "pattern": "bait and switch",
+      "in_total": false
+    }
+  ],
+  "expected_final_total": 1349,
+  "stop_point": "summary"
+}

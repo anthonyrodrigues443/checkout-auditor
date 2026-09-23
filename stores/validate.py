@@ -31,6 +31,8 @@ sys.path.insert(0, str(ROOT))
 from gen import STORES  # noqa: E402
 
 CONFIG = {s["id"]: s for s in STORES}
+from gen2 import STORES as STORES2  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES2})
 
 
 # ---------- server ----------
@@ -103,7 +105,7 @@ def key_sum(key):
     return (key["first_price"]
             + sum(c["amount"] for c in key["upfront_charges"])
             + sum(o["amount"] for o in key["chosen_options"])
-            + sum(t["amount"] for t in key["traps"] if t["scored"]))
+            + sum(t["amount"] for t in key["traps"] if t["scored"] and t.get("in_total", True)))
 
 
 def payment_text(cfg):

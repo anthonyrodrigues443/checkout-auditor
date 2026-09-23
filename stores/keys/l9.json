@@ -1,0 +1,26 @@
+{
+  "store_id": "l9",
+  "level": 9,
+  "name": "Leaf Nook",
+  "url": "http://localhost:8000/l9/",
+  "task": "Buy one money plant in a ceramic pot with standard delivery.",
+  "first_price": 549,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 60
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "collapsed_fee",
+      "label": "Processing fee",
+      "amount": 29,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 638,
+  "stop_point": "summary"
+}

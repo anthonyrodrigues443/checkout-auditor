@@ -1,0 +1,26 @@
+{
+  "store_id": "l10",
+  "level": 10,
+  "name": "Brew Lane",
+  "url": "http://localhost:8000/l10/",
+  "task": "Buy one 250 g pouch of Assam black tea with standard delivery.",
+  "first_price": 380,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "delivery_switched",
+      "label": "Express delivery",
+      "amount": 79,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 459,
+  "stop_point": "summary"
+}
