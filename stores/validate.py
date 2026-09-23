@@ -198,7 +198,11 @@ def walk(browser, key, base, cfg):
         page.click("#next-button")
         page.wait_for_url("**/summary.html")
 
+        if page.locator("#details-button").count():
+            page.click("#details-button")  # a view toggle, not an option: shows the lines it covers
         lines = page.inner_text("#order-lines").replace("\n", " | ")
+        if page.locator("#details-lines").count():
+            lines += " | " + page.inner_text("#details-lines").replace("\n", " | ")
         shown = rupees(page.inner_text("#order-total"))
         payment_shown = page.inner_text("#payment-line") if page.locator("#payment-line").count() else None
         if page.locator("#tip-check").count():
