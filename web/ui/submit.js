@@ -1,6 +1,6 @@
 /* Page 1 — submission.
 
-   Collect stores (one URL each) with their task sentences plus a set of models, POST them to
+   Collect stores (one URL each) with their task sentences plus the chosen model, POST them to
    /api/run, then poll /api/submission/{id} every 3s and render one report section per task as
    its runs finish. Every number shown comes from the run record the backend wrote; this page
    does no arithmetic of its own beyond counting jobs. */
@@ -85,12 +85,14 @@ function readRows() {
 
 /* ---- models ---- */
 
+/* One model per audit: radios, not tick-boxes. The API still takes a models list, so the one
+   choice is sent as a single-element array. */
 async function loadModels() {
   const slot = $('#models');
   try {
     const { models } = await apiGet('/api/models');
     slot.innerHTML = models
-      .map((m) => `<label class="chip"><input type="checkbox" class="model" value="${esc(m)}" checked>
+      .map((m, i) => `<label class="chip"><input type="radio" name="model" class="model" value="${esc(m)}"${i ? '' : ' checked'}>
                    <span class="mono">${esc(m)}</span></label>`)
       .join('');
   } catch (e) {
@@ -99,16 +101,19 @@ async function loadModels() {
   updateNote();
 }
 
-const readModels = () => $$('#models .model:checked').map((c) => c.value);
+const readModels = () => {
+  const picked = $('#models .model:checked');
+  return picked ? [picked.value] : [];
+};
 
 function updateNote() {
   const rows = readRows();
-  const models = readModels().length;
+  const model = readModels()[0];
   const stores = new Set(rows.map((r) => r.url)).size;
-  $('#go-note').innerHTML = rows.length && models
-    ? `<b>${rows.length * models} run${rows.length * models > 1 ? 's' : ''}</b> queued —
+  $('#go-note').innerHTML = rows.length && model
+    ? `<b>${rows.length} run${rows.length > 1 ? 's' : ''}</b> queued —
        ${rows.length} task${rows.length > 1 ? 's' : ''} across ${stores} store${stores > 1 ? 's' : ''}
-       × ${models} model${models > 1 ? 's' : ''}`
+       on <span class="mono">${esc(model)}</span>`
     : 'Nothing to run yet.';
 }
 
@@ -119,7 +124,7 @@ async function go() {
   const models = readModels();
   notice($('#error'), '');
   if (!rows.length) return noticeText($('#error'), 'Add at least one store URL with a task under it.', 'bad');
-  if (!models.length) return noticeText($('#error'), 'Tick at least one model.', 'bad');
+  if (!models.length) return noticeText($('#error'), 'Pick a model.', 'bad');
 
   $('#go').disabled = true;
   $('#go').innerHTML = '<span class="spinner"></span> Starting';
