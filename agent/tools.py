@@ -21,6 +21,7 @@ PAYMENT_WORDS = re.compile(
     re.I,
 )
 CHECKPOINT_NAMES = ("first_price", "cart", "final")
+TEXT_CAP = 12000  # characters of visible page text sent to the model per read_page
 
 SNAPSHOT_JS = r"""
 () => {
@@ -173,7 +174,7 @@ class BrowserSession:
         if snap.get("modal"):
             lines.append("NOTE: a pop-up dialog is open; elements marked (in pop-up) belong to it.")
         lines.append("--- visible text ---")
-        lines.append(snap["text"][:6000])
+        lines.append(snap["text"][:TEXT_CAP])
         lines.append("--- interactive elements ---")
         for i, el in enumerate(snap["elements"], 1):
             k = el["kind"]

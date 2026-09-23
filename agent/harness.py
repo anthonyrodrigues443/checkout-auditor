@@ -16,7 +16,7 @@ from typing import Any
 from playwright.async_api import Browser, async_playwright
 
 from agent.prompts import PROMPT_VERSION, SYSTEM_PROMPT, user_prompt
-from agent.tools import TOOL_NAMES, BrowserSession, RunState, build_tools
+from agent.tools import TEXT_CAP, TOOL_NAMES, BrowserSession, RunState, build_tools
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = ROOT / "runs"
@@ -155,7 +155,7 @@ async def run_audit(
         "actions": [], "usage": {}, "cost_usd": None, "final_text": None,
         "settings": {
             "max_turns": max_turns, "max_budget_usd": max_budget_usd, "effort": effort, "thinking": None,
-            "prompt_version": PROMPT_VERSION, "prompt_commit": git_commit(), "tools": TOOL_NAMES,
+            "prompt_version": PROMPT_VERSION, "prompt_commit": git_commit(), "tools": TOOL_NAMES, "text_cap": TEXT_CAP,
             "sdk": sdk_version(),
         },
         "sdk_result": None,
