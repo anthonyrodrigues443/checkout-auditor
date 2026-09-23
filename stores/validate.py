@@ -9,6 +9,7 @@ key adds up. Prints PASS/FAIL per store, exits non-zero on any failure.
 Usage: python stores/validate.py
 """
 import json
+from datetime import datetime
 import re
 import socket
 import subprocess
@@ -143,6 +144,7 @@ def main():
     port, proc = ensure_server()
     base = f"http://localhost:{port}"
     failures = 0
+    results = {}
     try:
         with sync_playwright() as p:
             browser = launch_browser(p)
@@ -170,6 +172,8 @@ def main():
                           f"pay_clicked={r['pay_clicked']}, test page={r['test_page']}\n      lines: {r['lines']}"
                           if r else f"key {expected} (key sum {ks})")
                 print(f"{status} {key['store_id']} {key['name']}: {detail}")
+                results[key["store_id"]] = {"status": status, "at": datetime.now().isoformat(timespec="seconds"),
+                                            "expected_final_total": expected, "problems": problems}
                 for pr in problems:
                     print(f"      - {pr}")
             browser.close()
@@ -178,6 +182,7 @@ def main():
             proc.terminate()
             proc.wait(timeout=5)
             print(f"stopped http.server on port {port}")
+    (KEYS / "validation.json").write_text(json.dumps(results, indent=1), encoding="utf-8")
     print(f"{len(keys) - failures}/{len(keys)} stores passed")
     sys.exit(1 if failures else 0)
 
