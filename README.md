@@ -84,3 +84,24 @@ checkout-auditor/
   stores/    gen.py, validate.py, www/ (served l1..l4), keys/ (answer keys, not served)
   runs/      one JSON per run + screenshots/ (gitignored)
 ```
+
+## Backend API (for the UI)
+
+`AUDITOR_MODE=prod .venv/bin/python -m web.app` serves a JSON API on http://127.0.0.1:8080 with CORS open. The HTML pages in `web/app.py` are a reference only; the real UI lives elsewhere and calls these:
+
+| Endpoint | What it returns |
+|---|---|
+| `GET /api/health` | mode, model list, server time |
+| `GET /api/stores` | seeded stores (id, level, name, url, task, validator status), no traps |
+| `GET /api/keys/{store_id}` | the full answer key (internal eval page only) |
+| `POST /api/run` `{rows:[{url,task,headed}], models:[...]}` | `{submission_id}`; one run per row x model, scheduled in the background |
+| `GET /api/submission/{id}` | rows, jobs (queued/running/done) with a run summary once finished; poll every 3 s |
+| `GET /api/submissions` | every submission seen in `runs/` plus in-memory ones |
+| `GET /api/runs?submission=&mode=&model=&store_id=` | run summaries: totals, findings, verdict line |
+| `GET /api/runs/{run_id}` | full run record, checks, score, key, screenshot URLs |
+| `POST /api/score` `{pairs:[{run_file,key_file}]}` | scores with the same `score_run` the batch uses |
+| `GET /api/eval` | the model comparison table (prod runs only) plus reproducibility block |
+| `POST /api/report/rebuild` | regenerates `report/index.html`, `report/eval.md`, `report/audit/*.html` |
+| `/runs/...`, `/report/...` | static screenshots and built reports |
+
+Run records are one JSON per run in `runs/`; the same file feeds the audit page, the eval table and the API.
