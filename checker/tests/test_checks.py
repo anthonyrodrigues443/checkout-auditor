@@ -383,3 +383,16 @@ def test_unexplained_gap_scores_against_a_hidden_fee_trap():
            "expected_final_total": 560}
     s = score_run(run, key)
     assert s["caught"] == 1 and s["seeded"] == 1 and s["false_alarms"] == 0
+
+
+def test_discount_shown_in_cart_but_gone_at_final_is_flagged():
+    from checker.checks import check_run
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": [_li("Blue Ceramic Mug", 499, chosen=True)], "total": 499},
+                           "cart": {"line_items": [_li("Blue Ceramic Mug", 499, chosen=True), _li("Welcome discount", -100)], "total": 399},
+                           "final": {"line_items": [_li("Blue Ceramic Mug", 499, chosen=True)], "total": 499}},
+           "actions": []}
+    out = check_run(run)
+    kinds = [(f["check"], f["amount"], f["pattern"]) for f in out["findings"]]
+    assert ("vanished_discount", 100.0, "bait and switch") in kinds
+    assert out["gap"]["unexplained"] == 0

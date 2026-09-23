@@ -9,7 +9,7 @@ import re
 
 TOLERANCE = 0.01
 
-SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount", "price_change", "unexplained_gap")
+SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount", "price_change", "unexplained_gap", "vanished_discount")
 
 CCPA_PATTERNS = {
     "basket_sneaking": "basket sneaking",
@@ -43,6 +43,7 @@ DECLINE_PREFIXES = (
 _AGGREGATE_RE = re.compile(r"\b(total|payable|amount due|to pay|you pay|grand)\b")
 CCPA_PATTERNS.setdefault("price_change", "bait and switch")
 CCPA_PATTERNS.setdefault("unexplained_gap", None)
+CCPA_PATTERNS.setdefault("vanished_discount", "bait and switch")
 
 _CURRENCY_RE = re.compile(r"₹|\brs\.?|\binr\b")
 _DIGITS_RE = re.compile(r"[\d,]")
@@ -279,6 +280,24 @@ def check_price_changes(final, first) -> list[dict]:
     return findings
 
 
+def check_vanished_discounts(final, cart) -> list[dict]:
+    """A discount shown in the cart that is gone from the final bill: the shopper pays more than the cart promised."""
+    findings = []
+    if not final or not cart:
+        return findings
+    for pair in match_lines(_items(cart), _items(final)):
+        item = pair["final"]  # here: the cart line
+        amount = _num(item.get("amount"))
+        if amount is None or amount >= 0 or pair["first"] is not None:
+            continue
+        f = _finding("vanished_discount", item, final,
+                     evidence=(f"'{item.get('label')}' −₹{fmt_amount(-amount)} was shown in the cart and is absent "
+                               f"from the final bill"), checkpoint="cart")
+        f["amount"] = round(-amount, 2)
+        findings.append(f)
+    return findings
+
+
 def check_misleading_discounts(final, first=None) -> list[dict]:
     """Negative final lines whose label states a bigger number than was applied."""
     findings = []
@@ -417,6 +436,7 @@ def check_run(run: dict) -> dict:
     if final:
         findings += check_misleading_discounts(final, first)
         checked["misleading_discount"] = True
+        findings += check_vanished_discounts(final, checkpoints.get("cart"))
     gap = check_gap(final, first, findings)
     checked["unexplained_gap"] = bool(gap.get("checkable"))
     if gap.get("flag"):
