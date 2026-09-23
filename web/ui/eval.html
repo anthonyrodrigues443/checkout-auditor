@@ -3,67 +3,110 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checkout Auditor — Eval</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🧾</text></svg>">
+<title>Eval · Checkout Auditor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div class="wrap">
+<div class="shell">
 
-  <header class="top">
-    <h1>Eval</h1>
-    <span class="sub">Scores the audit against the seeded answer key: what the store hid, what the agent found, and the gap.</span>
-    <nav class="tabs">
-      <a href="index.html">Audit</a>
-      <a href="eval.html" aria-current="page">Eval</a>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px">
+          <path d="M5 12.5l4.5 4.5L19 7"/>
+        </svg>
+      </span>
+      <span>
+        <span class="name">Checkout Auditor</span>
+        <span class="role">Hidden-charge audits</span>
+      </span>
+    </div>
+
+    <nav class="side-nav">
+      <div class="group">Workspace</div>
+      <a href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 2h6a1 1 0 011 1v1h2a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V5a1 1 0 011-1h2V3a1 1 0 011-1z"/><path d="M9 12h6M9 16h4"/>
+        </svg>
+        New audit
+      </a>
+      <a href="eval.html" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><path d="M6 20V10M12 20V4M18 20v-7"/>
+        </svg>
+        Eval
+      </a>
     </nav>
-  </header>
 
-  <div id="health"></div>
-
-  <section class="card">
-    <h2>Source</h2>
-    <p class="hint">Defaults to the runs from the last audit you started. Pick a different batch, or point a
-      single run file at a different answer key, then press&nbsp;Score.</p>
-
-    <div class="filebar" style="margin-bottom:12px">
-      <label class="check" for="batch">Batch</label>
-      <select id="batch"><option>loading…</option></select>
-      <span class="muted" id="batch-note"></span>
+    <div class="side-foot" id="side-status">
+      <div class="line"><span class="dot"></span> <span>checking backend…</span></div>
     </div>
+  </aside>
 
-    <details>
-      <summary class="muted" style="cursor:pointer;font-size:13px">Override a single file</summary>
-      <div class="filebar" style="margin-top:12px">
-        <label class="check" for="runsel">Run file</label>
-        <select id="runsel"></select>
-        <label class="check" for="keysel">Answer key</label>
-        <select id="keysel"></select>
-        <button class="secondary small" id="add-override" type="button">Add</button>
+  <main class="main">
+    <div class="main-inner">
+
+      <div class="page-head">
+        <div>
+          <h1>Eval</h1>
+          <p>Scores an audit against the seeded answer keys: what each store hid, what the agent
+             found, and the gap between the expected bill and the reported one.</p>
+        </div>
+        <div class="head-actions">
+          <button class="secondary" id="reset" type="button">Reset</button>
+          <button id="go" type="button">Score</button>
+        </div>
       </div>
-      <div class="muted" id="override-list" style="margin-top:8px"></div>
-    </details>
 
-    <div class="actions">
-      <button id="go" type="button">Score</button>
-      <button class="ghost small" id="reset" type="button">Reset to default</button>
-      <span class="spacer"></span>
-      <span class="muted" id="pair-note"></span>
+      <div id="health"></div>
+      <div id="error"></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Source</h2>
+          <span class="sub">Defaults to the last audit you started.</span>
+          <span class="right"><span class="badge neutral" id="pair-note">—</span></span>
+        </div>
+        <div class="card-body">
+          <div class="field" style="max-width:520px">
+            <label for="batch">Batch</label>
+            <select id="batch"><option>loading…</option></select>
+          </div>
+
+          <details class="disclose" style="margin-top:12px">
+            <summary>Score a single run file against a different key</summary>
+            <div class="toolbar" style="margin-top:10px;align-items:flex-end">
+              <div class="field" style="flex:2 1 260px"><label for="runsel">Run file</label><select id="runsel"></select></div>
+              <div class="field" style="flex:1 1 180px"><label for="keysel">Answer key</label><select id="keysel"></select></div>
+              <button class="secondary" id="add-override" type="button">Add override</button>
+            </div>
+            <div id="override-list" style="margin-top:10px"></div>
+          </details>
+        </div>
+      </section>
+
+      <section id="scored" hidden>
+        <div class="section-head"><h3>Predicted vs actual</h3><span class="rule"></span></div>
+        <div id="eval-summary"></div>
+        <div id="results"></div>
+      </section>
+
+      <section id="cmp-card" hidden>
+        <div class="section-head"><h3 id="cmp-title">Model comparison</h3><span class="rule"></span></div>
+        <section class="card"><div class="card-body" id="cmp"></div></section>
+      </section>
+
+      <div id="placeholder">
+        <div class="empty">
+          <span class="g">◷</span>
+          <div class="t">Nothing scored yet</div>
+          <div class="d">Press Score to check the latest audit against the answer keys.</div>
+        </div>
+      </div>
+
     </div>
-  </section>
-
-  <div id="error"></div>
-
-  <h2 id="results-heading" style="font-size:16px;margin:26px 0 12px" hidden>Predicted vs actual</h2>
-  <div id="results">
-    <div class="placeholder">Press <b>Score</b> to check the latest audit against the answer keys.</div>
-  </div>
-
-  <section class="card" id="cmp-card" hidden>
-    <h2 id="cmp-title">Model comparison</h2>
-    <div id="cmp"></div>
-  </section>
-
+  </main>
 </div>
 <script src="api.js"></script>
 <script src="eval.js"></script>
