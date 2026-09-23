@@ -1,6 +1,6 @@
 /* Page 1 — submission.
 
-   Collect (store URL, task sentence, show browser) rows plus a set of models, POST them to
+   Collect stores (one URL each) with their task sentences plus a set of models, POST them to
    /api/run, then poll /api/submission/{id} every 3s and render one report section per task as
    its runs finish. Every number shown comes from the run record the backend wrote; this page
    does no arithmetic of its own beyond counting jobs. */
@@ -8,9 +8,11 @@
 const POLL_MS = 3000;
 let rowSeq = 0;
 let poller = null;
-let currentSub = null;
 /** store_id -> shop name, so a task reads "Kirana Direct" rather than "L1" twice. */
 const storeNames = new Map();
+
+const TRASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+  stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>`;
 
 /* ---- stores and their tasks ----
    One store owns one URL and any number of task sentences. Adding a task adds a task only; the
@@ -25,13 +27,16 @@ function addStore(url = '', tasks = [''], headedOn = -1) {
     <div class="store-head">
       <span class="n"></span>
       <input type="text" class="url" placeholder="http://localhost:8000/l3/" value="${esc(url)}" aria-label="Store URL">
-      <button class="ghost icon remove-store" type="button" title="Remove this store" aria-label="Remove store">×</button>
+      <button class="icon remove-store" type="button" title="Remove this store" aria-label="Remove store">${TRASH}</button>
     </div>
     <div class="tasks"></div>
-    <button class="ghost small add-task" type="button">+ Add task</button>`;
+    <button class="ghost sm add-task" type="button">+ Add task</button>`;
 
   div.querySelector('.remove-store').addEventListener('click', () => { div.remove(); renumber(); updateNote(); });
-  div.querySelector('.add-task').addEventListener('click', () => { addTask(div); updateNote(); });
+  div.querySelector('.add-task').addEventListener('click', () => {
+    addTask(div).querySelector('.task').focus();
+    updateNote();
+  });
   $('#stores').appendChild(div);
   (tasks.length ? tasks : ['']).forEach((t, i) => addTask(div, t, i === headedOn));
   renumber();
@@ -44,8 +49,10 @@ function addTask(store, task = '', headed = false) {
   div.innerHTML = `
     <span class="n"></span>
     <input type="text" class="task" placeholder="Buy one blue ceramic mug with standard delivery." value="${esc(task)}" aria-label="Task">
-    <label class="check"><input type="checkbox" class="headed" ${headed ? 'checked' : ''}> show browser</label>
-    <button class="ghost icon remove-task" type="button" title="Remove this task" aria-label="Remove task">×</button>`;
+    <label class="chip" title="Run this one in a visible browser window">
+      <input type="checkbox" class="headed" ${headed ? 'checked' : ''}> show browser
+    </label>
+    <button class="icon remove-task" type="button" title="Remove this task" aria-label="Remove task">${TRASH}</button>`;
   div.querySelector('.remove-task').addEventListener('click', () => { div.remove(); renumber(); updateNote(); });
   store.querySelector('.tasks').appendChild(div);
   renumber();
@@ -83,11 +90,11 @@ async function loadModels() {
   try {
     const { models } = await apiGet('/api/models');
     slot.innerHTML = models
-      .map((m) => `<label class="check"><input type="checkbox" class="model" value="${esc(m)}" checked>
+      .map((m) => `<label class="chip"><input type="checkbox" class="model" value="${esc(m)}" checked>
                    <span class="mono">${esc(m)}</span></label>`)
       .join('');
   } catch (e) {
-    slot.innerHTML = `<span class="fail">${esc(e.message)}</span>`;
+    slot.innerHTML = `<span class="no">${esc(e.message)}</span>`;
   }
   updateNote();
 }
@@ -98,10 +105,11 @@ function updateNote() {
   const rows = readRows();
   const models = readModels().length;
   const stores = new Set(rows.map((r) => r.url)).size;
-  $('#go-note').textContent = rows.length && models
-    ? `${rows.length} task${rows.length > 1 ? 's' : ''} across ${stores} store${stores > 1 ? 's' : ''}`
-      + ` × ${models} model${models > 1 ? 's' : ''} = ${rows.length * models} runs`
-    : '';
+  $('#go-note').innerHTML = rows.length && models
+    ? `<b>${rows.length * models} run${rows.length * models > 1 ? 's' : ''}</b> queued —
+       ${rows.length} task${rows.length > 1 ? 's' : ''} across ${stores} store${stores > 1 ? 's' : ''}
+       × ${models} model${models > 1 ? 's' : ''}`
+    : 'Nothing to run yet.';
 }
 
 /* ---- launch + poll ---- */
@@ -109,25 +117,29 @@ function updateNote() {
 async function go() {
   const rows = readRows();
   const models = readModels();
-  banner($('#error'), '');
-  if (!rows.length) return banner($('#error'), 'Add at least one row with both a store URL and a task.');
-  if (!models.length) return banner($('#error'), 'Tick at least one model.');
+  notice($('#error'), '');
+  if (!rows.length) return noticeText($('#error'), 'Add at least one store URL with a task under it.', 'bad');
+  if (!models.length) return noticeText($('#error'), 'Tick at least one model.', 'bad');
 
   $('#go').disabled = true;
-  $('#go').textContent = 'Starting…';
+  $('#go').innerHTML = '<span class="spinner"></span> Starting';
   try {
     const { submission_id } = await apiPost('/api/run', { rows, models });
-    currentSub = submission_id;
     // The eval page defaults to whatever was last started here.
     localStorage.setItem('auditor.lastSubmission', submission_id);
+    $('#placeholder').hidden = true;
     $('#progress').hidden = false;
-    $('#results-heading').hidden = false;
+    $('#report').hidden = false;
     startPolling(submission_id);
   } catch (e) {
-    banner($('#error'), e.message);
-    $('#go').disabled = false;
-    $('#go').textContent = 'Run audit';
+    noticeText($('#error'), e.message, 'bad');
+    resetButton();
   }
+}
+
+function resetButton() {
+  $('#go').disabled = false;
+  $('#go').textContent = 'Run audit';
 }
 
 function startPolling(subId) {
@@ -137,15 +149,14 @@ function startPolling(subId) {
     try {
       sub = await apiGet(`/api/submission/${encodeURIComponent(subId)}`);
     } catch (e) {
-      banner($('#error'), e.message);
+      noticeText($('#error'), e.message, 'bad');
       return;
     }
     render(sub);
     if (sub.finished >= sub.total) {
       clearInterval(poller);
       poller = null;
-      $('#go').disabled = false;
-      $('#go').textContent = 'Run audit';
+      resetButton();
     }
   };
   tick();
@@ -154,31 +165,83 @@ function startPolling(subId) {
 
 /* ---- rendering ---- */
 
+const JOB_BADGE = {
+  queued: () => badge('neutral', '', 'queued'),
+  running: () => `<span class="badge accent"><span class="spinner" style="width:9px;height:9px;border-width:1.5px"></span>running</span>`,
+  done: () => badge('good', '✓', 'done'),
+  error: () => badge('critical', '✕', 'error'),
+};
+
 function renderProgress(sub) {
   const pct = sub.total ? Math.round((sub.finished / sub.total) * 100) : 0;
   const done = sub.finished >= sub.total;
-  $('#progress-head').innerHTML = `
-    <div class="muted">
-      ${done ? '' : '<span class="spin"></span>'}
-      submission <span class="mono">${esc(sub.submission_id)}</span>
-      · ${sub.finished}/${sub.total} runs finished
-      · started ${esc(shortTime(sub.started_at))}
-      · mode <span class="tag">${esc(sub.mode)}</span>
-      · <a href="${API}/submission/${encodeURIComponent(sub.submission_id)}" target="_blank" rel="noopener">open full report</a>
+  $('#progress-badge').innerHTML = done
+    ? badge('good', '✓', `${sub.total} of ${sub.total} finished`)
+    : `<span class="badge accent"><span class="spinner" style="width:9px;height:9px;border-width:1.5px"></span>${sub.finished} of ${sub.total}</span>`;
+
+  $('#progress-head').innerHTML = `<div class="muted" style="font-size:13px">
+      Submission <span class="mono">${esc(sub.submission_id)}</span> ·
+      started ${esc(shortTime(sub.started_at))} ·
+      ${esc(sub.mode)} mode ·
+      <a href="${API}/submission/${encodeURIComponent(sub.submission_id)}" target="_blank" rel="noopener">full report ↗</a>
     </div>`;
   $('#progress-bar').style.width = pct + '%';
 
   $('#jobs').innerHTML = sub.jobs.map((j) => {
     const row = sub.rows[j.row] || {};
     const state = j.error ? 'error' : j.status;
-    const label = j.error ? 'error' : j.status;
-    return `<div class="jobline">
-      <span class="tag ${state}">${esc(label)}</span>
-      <span class="m">${esc(j.model)}</span>
-      <span class="t">${j.row + 1}. ${esc(row.task || row.url || '')}</span>
-      <span class="muted">${esc(j.error || (j.run ? `${j.run.steps} steps · ${j.run.wall_seconds}s` : ''))}</span>
+    return `<div class="jobrow">
+      ${JOB_BADGE[state] ? JOB_BADGE[state]() : badge('neutral', '', state)}
+      <span class="model">${esc(j.model)}</span>
+      <span class="what">${j.row + 1}. ${esc(row.task || row.url || '')}</span>
+      <span class="meta">${esc(j.error || (j.run ? `${j.run.steps} steps · ${j.run.wall_seconds}s` : ''))}</span>
     </div>`;
   }).join('');
+}
+
+/** KPI row over the whole submission. Headline numbers, so stat tiles rather than a chart.
+
+    Counted over one representative run per task — the first that finished — never over every
+    run. Two models auditing the same shop find the same charge; summing across them would
+    report one hidden fee twice. Charges and discounts are also kept apart: a misleading "₹100
+    off" that only takes ₹40 is a finding with a negative amount, and letting it net against a
+    real fee would understate what the shopper was charged. */
+function renderSummary(sub) {
+  const runs = sub.jobs.map((j) => j.run).filter(Boolean);
+  if (!runs.length) { $('#summary').innerHTML = ''; return; }
+
+  const perTask = sub.rows.map((_, i) => (sub.jobs.find((j) => j.row === i && j.run) || {}).run).filter(Boolean);
+  const site = perTask.flatMap((r) => (r.findings || []).filter((f) => f.attribution !== 'agent'));
+  const charges = site.filter((f) => Number(f.amount) > 0);
+  const discounts = site.filter((f) => Number(f.amount) < 0);
+  const added = charges.reduce((a, f) => a + Number(f.amount), 0);
+  const affected = perTask.filter((r) => (r.findings || []).some((f) => f.attribution !== 'agent')).length;
+
+  const stopped = runs.filter((r) => !r.attempted_payment).length;
+  const scored = runs.filter((r) => r.scored);
+  const cleared = scored.filter((r) => r.level_cleared).length;
+
+  $('#summary').innerHTML = `<div class="stats">
+    <div class="stat"><div class="label">Tasks audited</div><div class="value">${perTask.length}</div>
+      <div class="delta">${runs.length} of ${sub.total} runs finished</div></div>
+
+    <div class="stat"><div class="label">Tasks with findings</div><div class="value">${affected}<span class="muted" style="font-size:15px"> / ${perTask.length}</span></div>
+      <div class="delta ${affected ? 'up' : 'flat'}">${affected ? 'hid something from the shopper' : 'all clean'}</div></div>
+
+    <div class="stat"><div class="label">Unchosen charges</div><div class="value">${rs(added)}</div>
+      <div class="delta ${added > 0 ? 'up' : 'flat'}">${charges.length
+        ? `${charges.length} charge${charges.length === 1 ? '' : 's'} the shopper never picked`
+        : 'nothing added to the bill'}</div></div>
+
+    ${discounts.length ? `<div class="stat"><div class="label">Misleading discounts</div><div class="value">${discounts.length}</div>
+      <div class="delta up">claimed more than they took off</div></div>` : ''}
+
+    <div class="stat"><div class="label">Stopped before paying</div><div class="value">${stopped}<span class="muted" style="font-size:15px"> / ${runs.length}</span></div>
+      <div class="delta ${stopped === runs.length ? 'flat' : 'up'}">${stopped === runs.length ? 'no payment attempted' : 'a run tried to pay'}</div></div>
+
+    ${scored.length ? `<div class="stat"><div class="label">Levels cleared</div><div class="value">${cleared}<span class="muted" style="font-size:15px"> / ${scored.length}</span></div>
+      <div class="delta">runs scored against answer keys</div></div>` : ''}
+  </div>`;
 }
 
 /** One report section per task row, with every model that ran it. */
@@ -188,16 +251,19 @@ function renderResults(sub) {
     const finished = jobs.filter((j) => j.run);
     const body = finished.length
       ? finished.map((j) => runBlock(j.run, jobs.length > 1)).join('')
-      : `<div class="muted"><span class="spin"></span>waiting for ${jobs.length} run${jobs.length > 1 ? 's' : ''}…</div>`;
-    return `<article class="task">
+      : `<div class="run"><span class="muted"><span class="spinner"></span>
+         waiting for ${jobs.length} run${jobs.length > 1 ? 's' : ''}…</span></div>`;
+    const name = storeNames.get(row.store_id) || (row.store_id ? row.store_id.toUpperCase() : 'Live site');
+    return `<article class="task-card">
       <header>
-        <span class="name">${i + 1}. ${esc(storeNames.get(row.store_id) || (row.store_id ? row.store_id.toUpperCase() : 'Live site'))}</span>
-        ${row.level ? `<span class="tag">L${esc(row.level)}</span>` : '<span class="tag">no answer key</span>'}
-        ${row.headed ? '<span class="tag">shown</span>' : ''}
-        <span class="task-text">${esc(row.task)}</span>
-        <a class="muted mono" href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.url)}</a>
+        <span class="idx">${i + 1}</span>
+        <span class="shop">${esc(name)}</span>
+        ${row.level ? badge('outline', '', `L${row.level}`) : badge('outline', '', 'no answer key')}
+        ${row.headed ? badge('accent', '◉', 'shown') : ''}
+        <span class="sentence">${esc(row.task)}</span>
+        <a class="mono muted" style="font-size:12px" href="${esc(row.url)}" target="_blank" rel="noopener">↗</a>
       </header>
-      <div class="body">${body}</div>
+      ${body}
     </article>`;
   }).join('');
 }
@@ -206,47 +272,65 @@ function renderResults(sub) {
 function runBlock(run, showModel) {
   const site = (run.findings || []).filter((f) => f.attribution !== 'agent');
   const agent = (run.findings || []).filter((f) => f.attribution === 'agent');
-  const rose = run.final_total != null && run.first_price_total != null && run.final_total > run.first_price_total;
+  const first = Number(run.first_price_total);
+  const final = Number(run.final_total);
+  const change = Number.isFinite(first) && Number.isFinite(final) ? final - first : null;
 
   const findings = site.length
-    ? `<table class="findings">
-        <thead><tr><th>Charge the shopper never chose</th><th>Pattern</th><th style="text-align:right">Amount</th></tr></thead>
+    ? `<div class="table-wrap"><table class="data">
+        <thead><tr><th>Charge the shopper never chose</th><th>Pattern</th><th class="num">Amount</th></tr></thead>
         <tbody>${site.map((f) => `<tr>
-          <td>${esc(f.label)}<div class="muted">${esc(f.evidence || '')}</div></td>
-          <td class="pat">${esc(f.pattern || checkLabel(f.check))}</td>
-          <td class="amt ${Number(f.amount) < 0 ? 'neg' : ''}">${rs(f.amount)}</td>
+          <td class="strong">${esc(f.label)}${f.evidence ? `<span class="sub">${esc(f.evidence)}</span>` : ''}</td>
+          <td>${badge('warning', '▲', f.pattern || checkLabel(f.check))}</td>
+          <td class="num strong">${rs(f.amount)}</td>
         </tr>`).join('')}</tbody>
-      </table>`
-    : '<div class="muted">No hidden charges found. Everything in the final bill was visible up front or chosen by the shopper.</div>';
+      </table></div>`
+    : `<div class="notice good" style="margin:0"><span class="g" aria-hidden="true">✓</span>
+       <span>No hidden charges. Every line in the final bill was visible up front or chosen by the shopper.</span></div>`;
 
-  const verdictClass = run.scored ? (run.level_cleared ? '' : 'fail') : 'none';
+  const cleared = run.scored && run.level_cleared;
+  const verdictKind = run.scored ? (cleared ? 'good' : 'bad') : 'none';
+  const verdictGlyph = run.scored ? (cleared ? '✓' : '✕') : 'ⓘ';
   const verdict = run.scored
     ? esc(run.verdict_line || '')
-    : `unscored — no answer key for this store. ${site.length} finding${site.length === 1 ? '' : 's'} flagged for review.`;
+    : `Unscored — no answer key for this store. ${site.length} finding${site.length === 1 ? '' : 's'} flagged for review.`;
 
-  return `
-    ${showModel ? `<div class="muted mono" style="margin-bottom:8px">${esc(run.model)}</div>` : ''}
-    <div class="prices">
-      <div class="price"><span class="lbl">First price seen</span><span class="val">${rs(run.first_price_total)}</span></div>
-      <span class="arrow">→</span>
-      <div class="price"><span class="lbl">Final total before paying</span><span class="val ${rose ? 'up' : ''}">${rs(run.final_total)}</span></div>
-      <span class="spacer" style="flex:1"></span>
-      <span class="muted">${run.steps ?? '—'} steps · ${run.wall_seconds ?? '—'}s${run.attempted_payment ? ' · <span class="fail">attempted payment</span>' : ' · stopped before payment'}</span>
+  return `<div class="run">
+    <div class="run-head">
+      ${showModel ? `<span class="model">${esc(run.model)}</span>` : ''}
+      <span class="spacer"></span>
+      <span class="run-meta">${run.steps ?? '—'} steps · ${run.wall_seconds ?? '—'}s</span>
+      ${run.attempted_payment ? badge('critical', '✕', 'attempted payment') : badge('good', '✓', 'stopped before payment')}
     </div>
+
+    <div class="pricepair" style="margin-bottom:14px">
+      <span class="leg"><span class="label">First price seen</span><span class="amount">${rs(run.first_price_total)}</span></span>
+      <span class="to" aria-hidden="true">→</span>
+      <span class="leg"><span class="label">Final total before paying</span>
+        <span class="amount ${change > 0 ? 'up' : ''}">${rs(run.final_total)}</span></span>
+      ${change !== null && change !== 0
+        ? `<span class="leg"><span class="label">Change</span>
+             <span class="amount ${change > 0 ? 'up' : ''}" style="font-size:16px">${rsDelta(change)}</span></span>`
+        : ''}
+    </div>
+
     ${findings}
-    ${agent.length ? `<div class="agent-err">Agent added these itself, not the site: ${agent.map((f) => `${esc(f.label)} ${rs(f.amount)}`).join(', ')}</div>` : ''}
-    ${run.gap ? `<div class="muted" style="margin-top:8px">${esc(run.gap)}</div>` : ''}
-    <div class="verdict ${verdictClass}">${verdict}</div>`;
+    ${agent.length ? `<div class="notice warn" style="margin:12px 0 0"><span class="g" aria-hidden="true">▲</span>
+      <span>The agent added these itself, not the site: ${agent.map((f) => `${esc(f.label)} ${rs(f.amount)}`).join(', ')}.</span></div>` : ''}
+    ${run.gap ? `<div class="muted" style="margin-top:10px;font-size:12.5px">${esc(run.gap)}</div>` : ''}
+    <div class="verdict ${verdictKind}"><span class="g" aria-hidden="true">${verdictGlyph}</span><span>${verdict}</span></div>
+  </div>`;
 }
 
 function render(sub) {
   renderProgress(sub);
+  renderSummary(sub);
   renderResults(sub);
 }
 
 /* ---- wiring ---- */
 
-$('#add-store').addEventListener('click', () => { addStore(); updateNote(); });
+$('#add-store').addEventListener('click', () => { addStore().querySelector('.url').focus(); updateNote(); });
 $('#clear').addEventListener('click', () => { $('#stores').innerHTML = ''; renumber(); updateNote(); });
 $('#go').addEventListener('click', go);
 $('#stores').addEventListener('input', updateNote);
@@ -268,20 +352,21 @@ $('#load-stores').addEventListener('click', async () => {
     renumber();
     updateNote();
   } catch (e) {
-    banner($('#error'), e.message);
+    noticeText($('#error'), e.message, 'bad');
   }
 });
 
 (async function init() {
   addStore();
-  await checkHealth($('#health'));
+  await checkHealth($('#side-status'), $('#health'));
   await loadModels();
   await loadStores().catch(() => {});  // names are a nicety; a failure here must not block a run
   // Deep link: index.html?submission=<id> reopens a submission started earlier.
   const sub = new URLSearchParams(location.search).get('submission');
   if (sub) {
+    $('#placeholder').hidden = true;
     $('#progress').hidden = false;
-    $('#results-heading').hidden = false;
+    $('#report').hidden = false;
     startPolling(sub);
   }
 })();

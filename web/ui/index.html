@@ -3,59 +3,119 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checkout Auditor</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🧾</text></svg>">
+<title>Audit · Checkout Auditor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div class="wrap">
+<div class="shell">
 
-  <header class="top">
-    <h1>Checkout Auditor</h1>
-    <span class="sub">Paste a store URL and what to buy. The agent shops, stops before paying, and reports what it was charged.</span>
-    <nav class="tabs">
-      <a href="index.html" aria-current="page">Audit</a>
-      <a href="eval.html">Eval</a>
-    </nav>
-  </header>
-
-  <div id="health"></div>
-
-  <section class="card">
-    <h2>Tasks</h2>
-    <p class="hint">Paste a store URL, then list the shopping tasks to run against it. Tick
-      <b>show browser</b> on a task to watch that run happen in a visible window.</p>
-    <div id="stores"></div>
-    <div class="actions">
-      <button class="secondary small" id="add-store" type="button">+ Add another store</button>
-      <button class="ghost small" id="load-stores" type="button">Load seeded stores</button>
-      <button class="ghost small" id="clear" type="button">Clear</button>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px">
+          <path d="M5 12.5l4.5 4.5L19 7"/>
+        </svg>
+      </span>
+      <span>
+        <span class="name">Checkout Auditor</span>
+        <span class="role">Hidden-charge audits</span>
+      </span>
     </div>
-  </section>
 
-  <section class="card">
-    <h2>Models</h2>
-    <div class="models" id="models"><span class="muted">loading…</span></div>
-  </section>
+    <nav class="side-nav">
+      <div class="group">Workspace</div>
+      <a href="index.html" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 2h6a1 1 0 011 1v1h2a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V5a1 1 0 011-1h2V3a1 1 0 011-1z"/><path d="M9 12h6M9 16h4"/>
+        </svg>
+        New audit
+      </a>
+      <a href="eval.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><path d="M6 20V10M12 20V4M18 20v-7"/>
+        </svg>
+        Eval
+      </a>
+    </nav>
 
-  <div class="actions">
-    <button id="go" type="button">Run audit</button>
-    <span class="spacer"></span>
-    <span class="muted" id="go-note"></span>
-  </div>
+    <div class="side-foot" id="side-status">
+      <div class="line"><span class="dot"></span> <span>checking backend…</span></div>
+    </div>
+  </aside>
 
-  <div id="error"></div>
+  <main class="main">
+    <div class="main-inner">
 
-  <section class="card" id="progress" hidden>
-    <h2>Progress</h2>
-    <div id="progress-head"></div>
-    <div class="bar"><i id="progress-bar" style="width:0%"></i></div>
-    <div id="jobs"></div>
-  </section>
+      <div class="page-head">
+        <div>
+          <h1>New audit</h1>
+          <p>Give a store URL and what to buy. The agent shops the checkout itself, stops before
+             payment, and reports every charge the shopper never chose.</p>
+        </div>
+        <div class="head-actions">
+          <button class="secondary" id="load-stores" type="button">Load seeded stores</button>
+          <button id="go" type="button">Run audit</button>
+        </div>
+      </div>
 
-  <h2 id="results-heading" style="font-size:16px;margin:26px 0 12px" hidden>Report</h2>
-  <div id="results"></div>
+      <div id="health"></div>
+      <div id="error"></div>
 
+      <section class="card">
+        <div class="card-head">
+          <h2>Tasks</h2>
+          <span class="sub">One URL per store, as many task sentences under it as you like.</span>
+        </div>
+        <div class="card-body">
+          <div id="stores"></div>
+          <div class="toolbar" style="margin-top:4px">
+            <button class="secondary sm" id="add-store" type="button">+ Add another store</button>
+            <button class="ghost sm" id="clear" type="button">Clear all</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Models</h2>
+          <span class="sub">Every ticked model runs every task.</span>
+        </div>
+        <div class="card-body">
+          <div class="toolbar" id="models"><span class="muted">loading…</span></div>
+        </div>
+        <div class="card-foot">
+          <span class="muted" id="go-note">Nothing to run yet.</span>
+        </div>
+      </section>
+
+      <section id="progress" hidden>
+        <div class="section-head"><h3>Progress</h3><span class="rule"></span><span id="progress-badge"></span></div>
+        <section class="card">
+          <div class="card-body">
+            <div id="progress-head"></div>
+            <div class="progress" style="margin:12px 0 4px"><i id="progress-bar" style="width:0%"></i></div>
+            <div class="joblist" id="jobs"></div>
+          </div>
+        </section>
+      </section>
+
+      <section id="report" hidden>
+        <div class="section-head"><h3>Report</h3><span class="rule"></span></div>
+        <div id="summary"></div>
+        <div id="results"></div>
+      </section>
+
+      <div id="placeholder">
+        <div class="empty">
+          <span class="g">◷</span>
+          <div class="t">No audit running</div>
+          <div class="d">Fill in a store and a task, then press Run audit.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
 </div>
 <script src="api.js"></script>
 <script src="submit.js"></script>
