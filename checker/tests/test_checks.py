@@ -438,3 +438,18 @@ def test_first_price_labelled_price_pairs_with_the_product_by_role():
     assert ("price_change", 50.0) in kinds
     assert ("unexplained_gap", -1299.0) not in kinds
     assert out["gap"]["unexplained"] == 0
+
+
+def test_estimate_lines_pair_by_head_word_and_traps_match_by_label_before_amount():
+    from checker.score import score_run
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": [_li("Price", 390), _li("Delivery (estimated)", 40, pre=True), _li("Packaging", 0, pre=True)], "total": 430},
+                           "cart": None,
+                           "final": {"line_items": [_li("Merino Wool Yarn 100 g", 390, chosen=True), _li("Delivery (standard; shown as ₹40 earlier)", 60, pre=True), _li("Packaging (shown as ₹0 free earlier)", 20, pre=True)], "total": 470}},
+           "actions": []}
+    key = {"store_id": "lx", "level": 22, "task": "t", "first_price": 390, "upfront_charges": [{"label": "Delivery", "amount": 40}, {"label": "Packaging", "amount": 0}], "chosen_options": [],
+           "traps": [{"type": "estimate_increase", "label": "Delivery", "amount": 20, "scored": True, "pattern": "bait and switch"},
+                     {"type": "estimate_increase", "label": "Packaging", "amount": 20, "scored": True, "pattern": "bait and switch"}],
+           "expected_final_total": 470}
+    s = score_run(run, key)
+    assert s["caught"] == 2 and s["false_alarms"] == 0 and s["level_cleared"], s["verdict_line"]

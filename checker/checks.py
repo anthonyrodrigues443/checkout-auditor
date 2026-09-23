@@ -138,7 +138,9 @@ def match_lines(final_items: list[dict], first_items: list[dict]) -> list[dict]:
             continue
         for j in remaining:
             m = normalise_label(first_items[j].get("label"))
-            if m and (n in m or m in n or (_distinctive(n) & _distinctive(m))):
+            head_n, head_m = (n.split() or [""])[0], (m.split() or [""])[0]
+            same_head = bool(head_n) and head_n == head_m and is_charge_label(head_n)
+            if m and (n in m or m in n or (_distinctive(n) & _distinctive(m)) or same_head):
                 pair["first"], pair["by"] = first_items[j], "label"
                 remaining.remove(j)
                 break

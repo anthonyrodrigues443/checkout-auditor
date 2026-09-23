@@ -50,7 +50,7 @@ def match_findings_to_traps(findings: list[dict], traps: list[dict]) -> dict:
     for trap in traps:
         ta = _num(trap.get("amount"))
         hit = None
-        for mode in ("amount+label", "amount", "label"):
+        for mode in ("amount+label", "label", "amount"):
             for i in unmatched:
                 fa = _num(site[i].get("amount"))
                 amount_ok = ta is not None and fa is not None and abs(ta - fa) <= TOLERANCE
