@@ -1,22 +1,22 @@
-# Offline eval on 16 seeded stores
+# Offline eval on 20 seeded stores
 
-Generated 2026-09-23T18:55:24 from 98 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T18:57:27 from 106 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
 | claude-fable-5 | 8 | 8 | 11/11 | 0 (n=1) | 8/8 | 8/8 | 12.6 | 32.8 | 0.176 |
 | claude-fable-5-1 | 4 | 4 | 4/4 | 0 (n=1) | 4/4 | 4/4 | 11.8 | 35.5 | 0.176 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
-| claude-opus-5 | 83 | 16 | 128/128 | 0 (n=5) | 83/83 | 83/83 | 14.0 | 34.4 | 0.098 |
+| claude-opus-5 | 91 | 20 | 137/138 | 0 (n=5) | 91/91 | 91/91 | 13.8 | 34.1 | 0.098 |
 
 ## Level cleared per level (cleared/runs)
 
-| model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 | L17 | L18 | L19 | L20 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
+| claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 1/2 | 2/2 | 2/2 | 2/2 |
 
 ## Reproducibility
 
@@ -40,8 +40,8 @@ Generated 2026-09-23T18:55:24 from 98 runs (debug test-mode runs excluded; crede
  "prompt_commit": "821c3e2",
  "sdk": "0.2.158",
  "date": "2026-09-23",
- "stores": 16,
- "trap_types": 10,
+ "stores": 20,
+ "trap_types": 12,
  "trap_type_names": [
   "cod_surcharge",
   "collapsed_fee",
@@ -50,16 +50,19 @@ Generated 2026-09-23T18:55:24 from 98 runs (debug test-mode runs excluded; crede
   "drip_fee",
   "misleading_discount",
   "pre_ticked_addon",
+  "preselected_zone_fee",
   "price_change",
   "subscription_trap",
+  "undisclosed_tax",
   "vanished_discount"
  ],
  "runs_per_cell": [
   1,
+  2,
   5,
   6
  ],
- "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 --repeats 1 && .venv/bin/python -m report.build_report"
+ "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 --repeats 1 && .venv/bin/python -m report.build_report"
 }
 ```
 
