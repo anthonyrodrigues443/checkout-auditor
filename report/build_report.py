@@ -268,6 +268,29 @@ def separating_cases(prod: list[dict]) -> list[dict]:
     return out
 
 
+def divergence_suite(prod: list[dict]) -> dict:
+    """Cells (store, wording) where at least one model failed at least once and at least two models ran.
+
+    Selected post hoc by outcome, so it is a lens on where models differ, not the eval itself; the full table above
+    is the eval. Per-model totals are cleared/runs over exactly these cells."""
+    cells, levels, variants = variant_cells(prod)
+    models = sorted({k[0] for k in cells})
+    picked = []
+    for lv in levels:
+        for v in variants:
+            have = {m: cells[(m, lv, v)] for m in models if (m, lv, v) in cells}
+            if len(have) < 2:
+                continue
+            if any(c < n for c, n in have.values()):
+                picked.append((lv, v, have))
+    totals = {}
+    for m in models:
+        c = sum(have[m][0] for _, _, have in picked if m in have)
+        n = sum(have[m][1] for _, _, have in picked if m in have)
+        totals[m] = (c, n)
+    return {"cells": picked, "totals": totals, "models": models}
+
+
 def svg_chart(per_level: dict, levels: list) -> str:
     models = list(per_level.keys())
     if not models or not levels:
@@ -342,6 +365,18 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
     for r in rows:
         parts.append(f"<tr><td>{esc(r['model'])}</td><td>{r['runs']}</td><td>{esc(r['highest'])}</td><td>{r['caught']}/{r['seeded']}</td><td>{esc(r['fa_l1'])}</td><td>{r['stopped']}</td><td>{r['completed']}</td><td>{r['steps']}</td><td>{r['seconds']}</td><td>{r['cost']}</td></tr>")
     parts.append("</table>")
+    ds = divergence_suite(prod)
+    parts.append(f"<h3>Divergence suite: {len(ds['cells'])} cells where at least one model failed</h3>"
+                 "<div class='muted'>Selected by outcome (a cell = one store × one task wording, with at least two models run and at least one failure). "
+                 "Scores below are cleared/runs over exactly these cells; the full table above is the eval.</div>")
+    if ds["cells"]:
+        parts.append("<table><tr><th>model</th><th>cleared/runs on the divergence suite</th></tr>" + "".join(
+            f"<tr><td>{esc(m)}</td><td><b>{c}/{n}</b></td></tr>" for m, (c, n) in sorted(ds["totals"].items())) + "</table>")
+        parts.append("<table><tr><th>store</th><th>wording</th>" + "".join(f"<th>{esc(m)}</th>" for m in ds["models"]) + "</tr>" + "".join(
+            f"<tr><td>L{esc(lv)}</td><td>{esc(v)}</td>" + "".join((f"<td>{have[m][0]}/{have[m][1]}</td>" if m in have else "<td>·</td>") for m in ds["models"]) + "</tr>"
+            for lv, v, have in ds["cells"]) + "</table>")
+    else:
+        parts.append("<div class='muted'>none yet</div>")
     parts.append("<h3>Level cleared per level (cleared/runs)</h3><table><tr><th>model</th>" + "".join(f"<th>L{esc(l)}</th>" for l in levels) + "</tr>")
     for m, cell in per_level.items():
         parts.append(f"<tr><td>{esc(m)}</td>" + "".join(f"<td>{cell[l][0]}/{cell[l][1]}</td>" for l in levels) + "</tr>")
@@ -383,6 +418,16 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
           "|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
         md.append(f"| {r['model']} | {r['runs']} | {r['highest']} | {r['caught']}/{r['seeded']} | {r['fa_l1']} | {r['stopped']} | {r['completed']} | {r['steps']} | {r['seconds']} | {r['cost']} |")
+    ds = divergence_suite(prod)
+    md += ["", f"## Divergence suite: {len(ds['cells'])} cells where at least one model failed", "",
+           "Selected by outcome: a cell is one store × one task wording with at least two models run and at least one failure. "
+           "Scores are cleared/runs over exactly these cells; the full table above is the eval.", ""]
+    if ds["cells"]:
+        md += ["| model | cleared/runs on the divergence suite |", "|---|---|"] + [f"| {m} | **{c}/{n}** |" for m, (c, n) in sorted(ds["totals"].items())]
+        md += ["", "| store | wording | " + " | ".join(ds["models"]) + " |", "|---|---|" + "---|" * len(ds["models"])] + [
+            f"| L{lv} | {v} | " + " | ".join((f"{have[m][0]}/{have[m][1]}" if m in have else "·") for m in ds["models"]) + " |" for lv, v, have in ds["cells"]]
+    else:
+        md.append("none yet")
     md += ["", "## Level cleared per level (cleared/runs)", "", "| model | " + " | ".join(f"L{l}" for l in levels) + " |", "|---|" + "---|" * len(levels)]
     for m, cell in per_level.items():
         md.append(f"| {m} | " + " | ".join(f"{cell[l][0]}/{cell[l][1]}" for l in levels) + " |")
