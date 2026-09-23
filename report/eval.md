@@ -1,11 +1,11 @@
 # Offline eval on 20 seeded stores
 
-Generated 2026-09-23T19:01:34 from 119 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T19:02:12 from 122 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 11 | 8 | 11/14 | 0 (n=1) | 11/11 | 11/11 | 12.7 | 32.8 | 0.183 |
-| claude-fable-5-1 | 7 | 17 | 7/7 | 0 (n=1) | 7/7 | 7/7 | 11.4 | 36.6 | 0.164 |
+| claude-fable-5 | 13 | 17 | 13/16 | 0 (n=1) | 13/13 | 13/13 | 12.5 | 31.6 | 0.181 |
+| claude-fable-5-1 | 8 | 17 | 8/8 | 0 (n=1) | 8/8 | 8/8 | 11.4 | 35.4 | 0.161 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
 | claude-opus-5 | 98 | 20 | 142/146 | 0 (n=5) | 98/98 | 98/98 | 13.6 | 34.0 | 0.098 |
 
@@ -13,10 +13,29 @@ Generated 2026-09-23T19:01:34 from 119 runs (debug test-mode runs excluded; cred
 
 | model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 | L17 | L18 | L19 | L20 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/3 | 0/0 | 0/0 | 0/0 |
-| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 3/3 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 2/5 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 4/4 | 0/0 | 0/0 | 0/0 |
 | claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
 | claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 2/6 | 3/3 | 3/3 | 3/3 |
+
+## By task wording (cleared/runs)
+
+| model | wording | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 | L17 | L18 | L19 | L20 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| claude-fable-5 | key | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | 2/2 | · | · | · |
+| claude-fable-5 | hard | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 0/3 | · | · | · |
+| claude-fable-5-1 | key | 1/1 | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | 1/1 | · | · | · |
+| claude-fable-5-1 | hard | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 3/3 | · | · | · |
+| claude-haiku-4-5-20251001 | key | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| claude-opus-5 | key | 3/3 | 3/3 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 1/1 | 1/1 | 1/1 | 1/1 |
+| claude-opus-5 | alt | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 |
+| claude-opus-5 | hard | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/4 | 1/1 | 1/1 | 1/1 |
+
+## Separating cases
+
+| store | wording | per model (cleared/runs) |
+|---|---|---|
+| L17 | hard | claude-fable-5 0/3 · claude-fable-5-1 3/3 · claude-opus-5 0/4 |
 
 ## Reproducibility
 
@@ -59,6 +78,7 @@ Generated 2026-09-23T19:01:34 from 119 runs (debug test-mode runs excluded; cred
  "runs_per_cell": [
   1,
   3,
+  4,
   5,
   6
  ],

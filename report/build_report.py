@@ -238,6 +238,36 @@ def comparison_rows(prod: list[dict]) -> tuple[list[dict], dict, list]:
     return rows, per_level, levels
 
 
+def variant_cells(prod: list[dict]) -> tuple[dict, list, list]:
+    """{(model, level, task_set): (cleared, runs)} plus the sorted level and task_set lists."""
+    cells: dict = {}
+    for r in prod:
+        if not r.get("_score"):
+            continue
+        k = (r["model"], str(r["level"]), r.get("task_variant") or "key")
+        c, n = cells.get(k, (0, 0))
+        cells[k] = (c + (1 if r["_score"].get("level_cleared") else 0), n + 1)
+    levels = sorted({k[1] for k in cells}, key=lambda s: (len(s), s))
+    variants = sorted({k[2] for k in cells}, key=lambda v: {"key": 0, "alt": 1}.get(v, 2))
+    return cells, levels, variants
+
+
+def separating_cases(prod: list[dict]) -> list[dict]:
+    """(store, task_set) cells where at least two models ran and their clear rates differ."""
+    cells, levels, variants = variant_cells(prod)
+    models = sorted({k[0] for k in cells})
+    out = []
+    for lv in levels:
+        for v in variants:
+            rates = {m: cells[(m, lv, v)] for m in models if (m, lv, v) in cells}
+            if len(rates) < 2:
+                continue
+            fr = {m: (c / n if n else 0) for m, (c, n) in rates.items()}
+            if max(fr.values()) - min(fr.values()) >= 0.5:
+                out.append({"level": lv, "task_set": v, "rates": rates})
+    return out
+
+
 def svg_chart(per_level: dict, levels: list) -> str:
     models = list(per_level.keys())
     if not models or not levels:
@@ -316,6 +346,23 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
         parts.append(f"<tr><td>{esc(m)}</td>" + "".join(f"<td>{cell[l][0]}/{cell[l][1]}</td>" for l in levels) + "</tr>")
     parts.append("</table>")
     parts.append(svg_chart(per_level, levels))
+    cells, vlevels, variants = variant_cells(prod)
+    if len(variants) > 1:
+        parts.append("<h3>By task wording (cleared/runs)</h3><table><tr><th>model</th><th>wording</th>" + "".join(f"<th>L{esc(l)}</th>" for l in vlevels) + "</tr>")
+        for m in sorted({k[0] for k in cells}):
+            for v in variants:
+                if not any((m, l, v) in cells for l in vlevels):
+                    continue
+                parts.append(f"<tr><td>{esc(m)}</td><td>{esc(v)}</td>" + "".join(
+                    (f"<td>{cells[(m,l,v)][0]}/{cells[(m,l,v)][1]}</td>" if (m, l, v) in cells else "<td>·</td>") for l in vlevels) + "</tr>")
+        parts.append("</table>")
+    seps = separating_cases(prod)
+    parts.append("<h3>Separating cases</h3>")
+    if seps:
+        parts.append("<table><tr><th>store</th><th>wording</th><th>per model (cleared/runs)</th></tr>" + "".join(
+            f"<tr><td>L{esc(c['level'])}</td><td>{esc(c['task_set'])}</td><td>" + " · ".join(f"{esc(m)} {r[0]}/{r[1]}" for m, r in sorted(c['rates'].items())) + "</td></tr>" for c in seps) + "</table>")
+    else:
+        parts.append("<div class='muted'>none yet: every model clears every cell it has run</div>")
     parts.append("<h3>Reproducibility</h3><pre>" + esc(json.dumps(repro, indent=1)) + "</pre>")
     parts.append("<h3>Honest limits</h3><ul>" + "".join(f"<li>{esc(l)}</li>" for l in LIMITS) + "</ul>")
     parts.append("<h2>Audit pages (product output, no model names)</h2><ul>" + "".join(
@@ -338,6 +385,19 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
     md += ["", "## Level cleared per level (cleared/runs)", "", "| model | " + " | ".join(f"L{l}" for l in levels) + " |", "|---|" + "---|" * len(levels)]
     for m, cell in per_level.items():
         md.append(f"| {m} | " + " | ".join(f"{cell[l][0]}/{cell[l][1]}" for l in levels) + " |")
+    if len(variants) > 1:
+        md += ["", "## By task wording (cleared/runs)", "", "| model | wording | " + " | ".join(f"L{l}" for l in vlevels) + " |", "|---|---|" + "---|" * len(vlevels)]
+        for m in sorted({k[0] for k in cells}):
+            for v in variants:
+                if not any((m, l, v) in cells for l in vlevels):
+                    continue
+                md.append(f"| {m} | {v} | " + " | ".join((f"{cells[(m,l,v)][0]}/{cells[(m,l,v)][1]}" if (m, l, v) in cells else "·") for l in vlevels) + " |")
+    md += ["", "## Separating cases", ""]
+    if seps:
+        md += ["| store | wording | per model (cleared/runs) |", "|---|---|---|"] + [
+            f"| L{c['level']} | {c['task_set']} | " + " · ".join(f"{m} {r[0]}/{r[1]}" for m, r in sorted(c['rates'].items())) + " |" for c in seps]
+    else:
+        md.append("none yet: every model clears every cell it has run")
     md += ["", "## Reproducibility", "", "```json", json.dumps(repro, indent=1), "```", "", "## Honest limits", ""] + [f"- {l}" for l in LIMITS] + [""]
     (OUT_DIR / "eval.md").write_text("\n".join(md))
 
