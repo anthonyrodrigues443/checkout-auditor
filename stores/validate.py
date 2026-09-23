@@ -25,7 +25,14 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parent
 WWW = ROOT / "www"
 KEYS = ROOT / "keys"
-CACHE = Path.home() / "Library/Caches/ms-playwright"
+
+# Every line this prints carries a rupee sign, and a Windows console defaults to cp1252, which
+# cannot encode it: without this the first PASS line raises UnicodeEncodeError.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 sys.path.insert(0, str(ROOT))
 from gen import STORES  # noqa: E402
@@ -97,16 +104,21 @@ def ensure_server():
 # ---------- browser ----------
 
 def launch_browser(p):
-    marker = CACHE / "chromium-1243" / "INSTALLATION_COMPLETE"
+    """Launch chromium, waiting out a download that is still in flight.
+
+    Playwright finds its own browser on every OS, so ask it rather than guessing a cache path: the
+    location, and the version in it, differ per platform and move with each playwright release."""
     deadline = time.time() + 300
-    while not marker.exists() and time.time() < deadline:
-        print("chromium-1243 not ready yet, waiting 20s ...")
-        time.sleep(20)
-    if marker.exists():
-        return p.chromium.launch()
-    exe = next((CACHE / "chromium-1223").glob("chrome-mac*/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"))
-    print(f"falling back to {exe}")
-    return p.chromium.launch(executable_path=str(exe))
+    while True:
+        try:
+            return p.chromium.launch()
+        except Exception as e:
+            if time.time() >= deadline:
+                raise RuntimeError(
+                    f"chromium never became launchable ({e}). Run: playwright install chromium"
+                ) from e
+            print("chromium not ready yet, waiting 20s ...")
+            time.sleep(20)
 
 
 # ---------- walk ----------
