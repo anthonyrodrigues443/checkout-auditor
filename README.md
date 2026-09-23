@@ -83,11 +83,27 @@ checkout-auditor/
   report/    build_report.py -> index.html, eval.md, audit/<submission>.html
   stores/    gen.py, validate.py, www/ (served l1..l4), keys/ (answer keys, not served)
   runs/      one JSON per run + screenshots/ (gitignored)
+  web/       app.py (JSON API + reference pages), ui/ (the two pages people actually use)
 ```
+
+## The UI
+
+Two static pages in `web/ui/`, no build step and no framework, mounted by `web.app` at `/ui`:
+
+| Page | URL | What it does |
+|---|---|---|
+| Audit | `/ui/` | Rows of (store URL, task sentence, show browser) plus model tick-boxes. **Run audit** POSTs `/api/run`, then polls `/api/submission/{id}` every 3 s and renders one section per task: first price → final total, the charges the shopper never chose with their pattern names, and the verdict line. **Load seeded stores** fills the rows from `/api/stores`. |
+| Eval | `/ui/eval.html` | Pre-loads the runs from the last audit started on the Audit page, pairs each with its store's answer key, and scores them via `/api/score` — so the demo is one press of **Score**, or none at all. Each panel shows seeded vs found and `expected − reported` for the first price and the final total. Below it, the model comparison table from `/api/eval`. |
+
+The pages are plain HTML/CSS/JS on purpose: nothing on the demo path needs a bundler or the network. They call the API on their own origin by default; `?api=http://host:port` points them at a backend somewhere else and is remembered.
+
+### Developing the UI without the backend
+
+`python web/ui/mock_api.py` serves the same endpoints and the pages on the same port, with runs synthesised from the real answer keys. It needs nothing but the standard library — no SDK, no Playwright, no API key — so the front end can be worked on while runs are happening elsewhere. Every page shows a banner when it is talking to the mock. It is a development aid only; `web/app.py` never imports it.
 
 ## Backend API (for the UI)
 
-`AUDITOR_MODE=prod .venv/bin/python -m web.app` serves a JSON API on http://127.0.0.1:8080 with CORS open. The HTML pages in `web/app.py` are a reference only; the real UI lives elsewhere and calls these:
+`AUDITOR_MODE=prod .venv/bin/python -m web.app` serves a JSON API on http://127.0.0.1:8080 with CORS open. The HTML pages in `web/app.py` are a reference only; the real UI is `web/ui/` (see above) and calls these:
 
 | Endpoint | What it returns |
 |---|---|
