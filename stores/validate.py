@@ -201,6 +201,8 @@ def walk(browser, key, base, cfg):
         lines = page.inner_text("#order-lines").replace("\n", " | ")
         shown = rupees(page.inner_text("#order-total"))
         payment_shown = page.inner_text("#payment-line") if page.locator("#payment-line").count() else None
+        if page.locator("#tip-check").count():
+            found["tip"] = page.is_checked("#tip-check")
         page.click("#pay-button")
         page.wait_for_url("**/pay.html")
         pay_clicked = page.evaluate("localStorage.getItem('pay_clicked')")
