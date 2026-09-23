@@ -24,6 +24,7 @@ CHECKPOINT_NAMES = ("first_price", "cart", "final")
 
 SNAPSHOT_JS = r"""
 () => {
+  const ov = document.getElementById('ca-overlay'); if (ov) ov.remove();
   const visible = (el) => {
     const r = el.getBoundingClientRect();
     const s = getComputedStyle(el);
