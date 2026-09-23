@@ -92,7 +92,7 @@ Two static pages in `web/ui/`, no build step and no framework, mounted by `web.a
 
 | Page | URL | What it does |
 |---|---|---|
-| Audit | `/ui/` | Rows of (store URL, task sentence, show browser) plus model tick-boxes. **Run audit** POSTs `/api/run`, then polls `/api/submission/{id}` every 3 s and renders one section per task: first price → final total, the charges the shopper never chose with their pattern names, and the verdict line. **Load seeded stores** fills the rows from `/api/stores`. |
+| Audit | `/ui/` | One store URL with any number of task sentences under it, `+ Add another store` for more, plus model tick-boxes. The URL is asked for once per store and multiplied across its tasks into the flat `rows` the API wants. **Run audit** POSTs `/api/run`, then polls `/api/submission/{id}` every 3 s and renders one section per task: first price → final total, the charges the shopper never chose with their pattern names, and the verdict line. `show browser` is per task, so one task can run headed while the rest stay headless. **Load seeded stores** fills it from `/api/stores`. |
 | Eval | `/ui/eval.html` | Pre-loads the runs from the last audit started on the Audit page, pairs each with its store's answer key, and scores them via `/api/score` — so the demo is one press of **Score**, or none at all. Each panel shows seeded vs found and `expected − reported` for the first price and the final total. Below it, the model comparison table from `/api/eval`. |
 
 The pages are plain HTML/CSS/JS on purpose: nothing on the demo path needs a bundler or the network. They call the API on their own origin by default; `?api=http://host:port` points them at a backend somewhere else and is remembered.
