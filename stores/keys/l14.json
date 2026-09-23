@@ -1,0 +1,18 @@
+{
+  "store_id": "l14",
+  "level": 14,
+  "name": "Towel Town",
+  "url": "http://localhost:8000/l14/",
+  "task": "Buy ONE cotton bath towel with standard delivery.",
+  "first_price": 599,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 40
+    }
+  ],
+  "chosen_options": [],
+  "traps": [],
+  "expected_final_total": 639,
+  "stop_point": "summary"
+}

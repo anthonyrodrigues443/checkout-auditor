@@ -33,6 +33,8 @@ from gen import STORES  # noqa: E402
 CONFIG = {s["id"]: s for s in STORES}
 from gen2 import STORES as STORES2  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES2})
+from gen3 import STORES as STORES3  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES3})
 
 
 # ---------- server ----------
@@ -140,10 +142,13 @@ def walk(browser, key, base, cfg):
     page = ctx.new_page()
     found = {}
     gift_seen = False
+    extra_pages = 0
     try:
         page.goto(f"{base}/{key['store_id']}/")
         if choice.get("size"):
             page.select_option("#size-select", choice["size"])
+        if choice.get("quantity"):
+            page.select_option("#quantity-select", choice["quantity"])
         page.click("#add-button")
         page.wait_for_url("**/cart.html")
 
@@ -159,7 +164,14 @@ def walk(browser, key, base, cfg):
             gift_seen = True
             found["gift"] = page.is_checked("#gift-check")
             page.click("#next-button")
-            page.wait_for_url("**/options.html")
+            page.wait_for_url(re.compile(r".*/(protection|address|options)\.html$"))
+
+        while re.search(r"/(protection|address)\.html$", page.url):
+            extra_pages += 1
+            if page.locator("#protection-check").count():
+                found["protection"] = page.is_checked("#protection-check")
+            page.click("#next-button")
+            page.wait_for_url(re.compile(r".*/(protection|address|options)\.html$"))
 
         current = page.eval_on_selector("#delivery-select", "el => el.value")
         if current != choice["delivery"]:
@@ -170,6 +182,8 @@ def walk(browser, key, base, cfg):
                 page.select_option("#payment-select", choice["payment"])
         if page.locator("#protection-check").count():
             found["protection"] = page.is_checked("#protection-check")
+        if page.locator("#membership-check").count():
+            found["membership"] = page.is_checked("#membership-check")
         page.click("#next-button")
         page.wait_for_url("**/summary.html")
 
@@ -183,7 +197,7 @@ def walk(browser, key, base, cfg):
     finally:
         ctx.close()
     return {"cart_total": cart_total, "lines": lines, "shown": shown, "found": found,
-            "gift_seen": gift_seen, "pages": 6 if gift_seen else 5, "payment_shown": payment_shown,
+            "gift_seen": gift_seen, "pages": (6 if gift_seen else 5) + extra_pages, "payment_shown": payment_shown,
             "pay_clicked": pay_clicked, "test_page": test_page}
 
 

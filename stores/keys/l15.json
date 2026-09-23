@@ -1,0 +1,27 @@
+{
+  "store_id": "l15",
+  "level": 15,
+  "name": "Bean Counter",
+  "url": "http://localhost:8000/l15/",
+  "task": "Buy one 250 g bag of roasted arabica beans with standard delivery.",
+  "first_price": 520,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 49
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "subscription_trap",
+      "label": "Plus membership trial",
+      "amount": 0,
+      "scored": true,
+      "pattern": "subscription trap",
+      "in_total": false
+    }
+  ],
+  "expected_final_total": 569,
+  "stop_point": "summary"
+}

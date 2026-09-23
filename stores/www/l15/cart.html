@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your sack – Bean Counter</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="layout-stacked" data-page="cart">
+<header class="site-header">
+  <a class="brand" href="index.html">Bean Counter</a>
+  <nav><a href="cart.html">Your sack</a></nav>
+</header>
+<main class="shell">
+<h1>Your sack</h1>
+<section class="content">
+<p class="coupon-row"><label>Coupon code <input type="text" id="coupon-input" value="SAVE200"></label> <button id="coupon-button" type="button">Apply coupon</button> <span id="coupon-note"></span></p><p><button id="next-button" type="button">Keep going</button></p>
+</section>
+<aside class="order-box">
+  <h2>Items in your sack</h2>
+  <div id="order-lines"></div>
+  <div class="line total"><span>Total</span><span id="order-total"></span></div>
+</aside>
+</main>
+<footer class="site-footer">Bean Counter · Mumbai</footer>
+<script src="app.js"></script>
+</body>
+</html>

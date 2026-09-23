@@ -1,0 +1,26 @@
+{
+  "store_id": "l16",
+  "level": 16,
+  "name": "Curd and Cream",
+  "url": "http://localhost:8000/l16/",
+  "task": "Buy one 500 g pack of aged gouda cheese with standard delivery.",
+  "first_price": 445,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 30
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Cold chain fee",
+      "amount": 15,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 490,
+  "stop_point": "summary"
+}

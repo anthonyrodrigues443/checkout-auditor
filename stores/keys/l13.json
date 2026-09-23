@@ -1,0 +1,47 @@
+{
+  "store_id": "l13",
+  "level": 13,
+  "name": "Lumen Lane",
+  "url": "http://localhost:8000/l13/",
+  "task": "Buy one bamboo desk lamp with standard delivery.",
+  "first_price": 1450,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Greeting card",
+      "amount": 35,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "pre_ticked_addon",
+      "label": "Damage cover",
+      "amount": 79,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "drip_fee",
+      "label": "Platform fee",
+      "amount": 19,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "upsell_popup",
+      "label": "Second Bamboo Desk Lamp (20% off)",
+      "amount": 1160,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 1583,
+  "stop_point": "summary"
+}
