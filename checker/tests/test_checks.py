@@ -336,3 +336,50 @@ def test_load_key_for_and_cli(tmp_path, capsys):
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+
+# ---- price change, opaque totals, unexplained gap -------------------------------------------
+
+def _run_with(first_items, first_total, final_items, final_total, **extra):
+    from checker.checks import check_run
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": first_items, "total": first_total},
+                           "cart": None, "final": {"line_items": final_items, "total": final_total}},
+           "actions": []}
+    run.update(extra)
+    return check_run(run)
+
+
+def _li(label, amount, chosen=False, pre=False):
+    return {"label": label, "amount": amount, "chosen_by_me": chosen, "pre_selected": pre}
+
+
+def test_price_change_is_a_finding_and_explains_the_gap():
+    out = _run_with([_li("Blue Ceramic Mug", 499, chosen=True)], 499,
+                    [_li("Blue Ceramic Mug", 549, chosen=True)], 549)
+    kinds = [(f["check"], f["amount"]) for f in out["findings"]]
+    assert kinds == [("price_change", 50.0)]
+    assert out["findings"][0]["pattern"] == "bait and switch"
+    assert out["gap"]["unexplained"] == 0
+
+
+def test_opaque_total_line_is_not_basket_sneaking_but_an_unexplained_gap():
+    out = _run_with([_li("Blue Ceramic Mug", 499, chosen=True)], 499,
+                    [_li("Order total", 560)], 560)
+    kinds = [(f["check"], f["amount"]) for f in out["findings"]]
+    assert ("basket_sneaking", 560.0) not in kinds
+    assert ("unexplained_gap", 61.0) in kinds
+
+
+def test_unexplained_gap_scores_against_a_hidden_fee_trap():
+    from checker.score import score_run
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": [_li("Blue Ceramic Mug", 499, chosen=True)], "total": 499},
+                           "cart": None, "final": {"line_items": [_li("Amount payable", 560)], "total": 560}},
+           "actions": []}
+    key = {"store_id": "lx", "level": 9, "task": "t", "first_price": 499, "upfront_charges": [], "chosen_options": [],
+           "traps": [{"type": "collapsed_fee", "label": "Processing fee", "amount": 61, "scored": True, "pattern": "drip pricing"}],
+           "expected_final_total": 560}
+    s = score_run(run, key)
+    assert s["caught"] == 1 and s["seeded"] == 1 and s["false_alarms"] == 0

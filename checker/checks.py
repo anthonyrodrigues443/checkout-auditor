@@ -39,6 +39,11 @@ DECLINE_PREFIXES = (
     "don t", "dont", "maybe later", "cancel", "i don", "i dont",
 )
 
+# Lines that restate the bill rather than itemise it ("Order total", "Amount payable"); never a finding on their own.
+_AGGREGATE_RE = re.compile(r"\b(total|payable|amount due|to pay|you pay|grand)\b")
+CCPA_PATTERNS.setdefault("price_change", "bait and switch")
+CCPA_PATTERNS.setdefault("unexplained_gap", None)
+
 _CURRENCY_RE = re.compile(r"₹|\brs\.?|\binr\b")
 _DIGITS_RE = re.compile(r"[\d,]")
 _PUNCT_RE = re.compile(r"[^\w\s]")
@@ -54,6 +59,10 @@ def normalise_label(label) -> str:
     s = _DIGITS_RE.sub("", s)
     s = _PUNCT_RE.sub(" ", s)
     return _SPACES_RE.sub(" ", s).strip()
+
+
+def is_aggregate_label(label) -> bool:
+    return bool(_AGGREGATE_RE.search(normalise_label(label)))
 
 
 def is_charge_label(label) -> bool:
@@ -214,7 +223,7 @@ def check_basket_sneaking(final, first, actions=None) -> list[dict]:
         if amount is None or amount <= 0:
             continue
         pre = bool(item.get("pre_selected"))
-        if is_charge_label(item.get("label")):
+        if is_charge_label(item.get("label")) or is_aggregate_label(item.get("label")):
             continue
         attribution, hit = attribute_to_agent(item.get("label"), action_texts)
         evidence = (
@@ -240,7 +249,7 @@ def check_drip_pricing(final, first) -> list[dict]:
         if pair["first"] is not None or item.get("chosen_by_me"):
             continue
         amount = _num(item.get("amount"))
-        if amount is None or amount <= 0 or not is_charge_label(item.get("label")):
+        if amount is None or amount <= 0 or not is_charge_label(item.get("label")) or is_aggregate_label(item.get("label")):
             continue
         findings.append(_finding(
             "drip_pricing", item, final,
@@ -249,6 +258,24 @@ def check_drip_pricing(final, first) -> list[dict]:
                 f"first_price (first price screen total ₹{fmt_amount(first_total)})"
             ),
         ))
+    return findings
+
+
+def check_price_changes(final, first) -> list[dict]:
+    """A line shown at first_price whose amount is different at final (bait and switch on the price itself)."""
+    findings = []
+    for pair in match_lines(_items(final), _items(first)):
+        if pair["by"] != "label" or is_aggregate_label(pair["final"].get("label")):
+            continue
+        a, b = _num(pair["first"].get("amount")), _num(pair["final"].get("amount"))
+        if a is None or b is None or abs(a - b) <= TOLERANCE:
+            continue
+        f = _finding("price_change", pair["final"], final,
+                     evidence=(f"'{pair['final'].get('label')}' was ₹{fmt_amount(a)} at first_price and "
+                               f"₹{fmt_amount(b)} at final"),
+                     shown_first=a, shown_final=b)
+        f["amount"] = round(b - a, 2)
+        findings.append(f)
     return findings
 
 
@@ -306,7 +333,7 @@ def check_gap(final, first, findings) -> dict:
     gap = round(final_total - expected, 2)
     explained = 0.0
     for f in findings:
-        if f.get("check") in ("basket_sneaking", "drip_pricing") and f.get("amount") is not None:
+        if f.get("check") in ("basket_sneaking", "drip_pricing", "price_change") and f.get("amount") is not None:
             explained += f["amount"]
         elif f.get("check") == "misleading_discount" and not f.get("present_at_first_price"):
             explained += f.get("shortfall") or 0.0
@@ -381,8 +408,8 @@ def check_run(run: dict) -> dict:
     if final and first:
         findings += check_basket_sneaking(final, first, run.get("actions"))
         findings += check_drip_pricing(final, first)
+        findings += check_price_changes(final, first)
         checked["basket_sneaking"] = checked["drip_pricing"] = True
-        notes += _amount_change_notes(final, first)
     elif final:
         notes.append("first_price checkpoint missing: basket sneaking and drip pricing could not be checked")
     else:
@@ -394,6 +421,10 @@ def check_run(run: dict) -> dict:
     checked["unexplained_gap"] = bool(gap.get("checkable"))
     if gap.get("flag"):
         notes.append(f"unexplained gap of ₹{fmt_amount(gap['unexplained'])} in the final total")
+        findings.append(_finding(
+            "unexplained_gap", {"label": "Unexplained difference in the final total", "amount": gap["unexplained"]}, final,
+            evidence=gap.get("summary", ""),
+        ))
     if run.get("attempted_payment"):
         notes.append(
             "agent attempted a payment click (blocked by the click guard); "

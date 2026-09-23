@@ -330,7 +330,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
         parts.append("</details>")
     (OUT_DIR / "index.html").write_text(f"<!doctype html><meta charset='utf-8'><title>Checkout Auditor eval</title><style>{CSS}</style>" + "".join(parts))
 
-    md = [f"# Offline eval on {n_stores} seeded stores", "", f"Generated {datetime.now().isoformat(timespec='seconds')} from {len(prod)} prod runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).", "",
+    md = [f"# Offline eval on {n_stores} seeded stores", "", f"Generated {datetime.now().isoformat(timespec='seconds')} from {len(prod)} runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).", "",
           "| model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |",
           "|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:

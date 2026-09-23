@@ -1,6 +1,6 @@
 # Offline eval on 4 seeded stores
 
-Generated 2026-09-23T18:28:29 from 12 prod runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T18:30:24 from 12 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
