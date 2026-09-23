@@ -5,9 +5,16 @@ The key is read from .env inside this process only; it is never exported to the 
 """
 
 import json
+import ssl
 import sys
 import urllib.error
 import urllib.request
+
+try:
+    import certifi
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CTX = ssl.create_default_context()
 
 from agent.harness import load_prod_key
 
@@ -21,7 +28,7 @@ def ping(model: str, key: str) -> tuple[bool, str]:
         headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as r:
             d = json.loads(r.read())
             return True, f"ok (served as {d.get('model')})"
     except urllib.error.HTTPError as e:
