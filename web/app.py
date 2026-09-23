@@ -21,6 +21,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from playwright.async_api import async_playwright
@@ -32,7 +33,10 @@ from agent.harness import (  # noqa: E402
     ROOT as HARNESS_ROOT, RUNS_DIR, ensure_store_server, get_mode, launch_browser, run_audit, sdk_env_for_mode,
 )
 from checker.score import score_run  # noqa: E402
-from report.build_report import CSS, enrich, esc, load_runs, rupees, run_section  # noqa: E402
+from report.build_report import (  # noqa: E402
+    CSS, LIMITS, comparison_rows, enrich, esc, load_runs, repro_block, rupees, run_section,
+)
+import report.build_report as build_report  # noqa: E402
 
 KEYS_DIR = HARNESS_ROOT / "stores" / "keys"
 REPORT_DIR = HARNESS_ROOT / "report"
@@ -112,7 +116,10 @@ def api_submission(sub: dict) -> dict:
     jobs = sub["jobs"]
     return {"submission_id": sub["id"], "started_at": sub["started_at"], "mode": MODE,
             "finished": sum(1 for j in jobs if j["status"] == "done"), "total": len(jobs),
-            "jobs": [{k: j.get(k) for k in ("row", "model", "status", "run_id", "started_at", "error")} for j in jobs]}
+            "rows": [{k: r.get(k) for k in ("url", "task", "headed", "store_id", "level")} for r in sub["rows"]],
+            "jobs": [dict({k: j.get(k) for k in ("row", "model", "status", "run_id", "started_at", "error")},
+                          run=(run_summary(load_run(j["run_id"])) if j.get("run_id") and load_run(j["run_id"]) else None))
+                     for j in jobs]}
 
 
 async def get_headed_browser(model: str, models: list[str]):
@@ -444,6 +451,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Checkout Auditor", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
 @app.exception_handler(HTTPException)
@@ -528,6 +536,172 @@ async def eval_md():
         raise HTTPException(404, "report/eval.md not built yet; run .venv/bin/python -m report.build_report")
     return PlainTextResponse(p.read_text(), media_type="text/plain; charset=utf-8")
 
+
+
+# ---- JSON API for the UI (the contributor's frontend calls these; HTML pages above are a reference) --------
+
+_RUN_CACHE: dict[str, tuple[float, dict]] = {}
+
+
+def load_run(run_id: str) -> dict | None:
+    p = RUNS_DIR / f"{Path(str(run_id)).name}.json"
+    if not p.is_file():
+        return None
+    mtime = p.stat().st_mtime
+    hit = _RUN_CACHE.get(run_id)
+    if hit and hit[0] == mtime:
+        return hit[1]
+    try:
+        r = json.loads(p.read_text())
+    except Exception:
+        return None
+    r["_file"] = p.name
+    enrich(r)
+    _RUN_CACHE[run_id] = (mtime, r)
+    return r
+
+
+def run_summary(r: dict) -> dict:
+    cp = r.get("checkpoints") or {}
+    fp, fin = cp.get("first_price") or {}, cp.get("final") or {}
+    checks = r.get("_checks") or {}
+    sc = r.get("_score") or {}
+    return {
+        "run_id": r["run_id"], "file": r.get("_file"), "model": r.get("model"), "level": r.get("level"),
+        "store_id": r.get("store_id"), "store_url": r.get("store_url"), "task": r.get("task"), "mode": r.get("mode"),
+        "submission": r.get("submission"), "status": r.get("status"), "error": r.get("error"),
+        "completed": r.get("completed"), "attempted_payment": r.get("attempted_payment"),
+        "steps": r.get("steps"), "wall_seconds": r.get("wall_seconds"), "cost_usd": r.get("cost_usd"),
+        "started_at": r.get("started_at"), "ended_at": r.get("ended_at"),
+        "first_price_total": fp.get("total"), "final_total": fin.get("total"),
+        "findings": [{k: f.get(k) for k in ("check", "label", "amount", "pattern", "attribution", "evidence")}
+                     for f in checks.get("findings", [])],
+        "gap": (checks.get("gap") or {}).get("summary"),
+        "scored": bool(sc), "verdict_line": sc.get("verdict_line"), "level_cleared": sc.get("level_cleared"),
+        "caught": sc.get("caught"), "seeded": sc.get("seeded"), "false_alarms": sc.get("false_alarms"),
+        "amounts_correct": sc.get("amounts_correct"),
+    }
+
+
+def all_runs_enriched() -> list[dict]:
+    out = []
+    for p in sorted(RUNS_DIR.glob("*.json")):
+        r = load_run(p.stem)
+        if r:
+            out.append(r)
+    return out
+
+
+@app.get("/api/health")
+async def api_health():
+    return {"ok": True, "mode": MODE, "models": MODELS, "time": now_iso(), "runs_dir": str(RUNS_DIR)}
+
+
+@app.get("/api/models")
+async def api_models():
+    return {"models": MODELS, "mode": MODE, "note": "full model IDs only; test-mode runs are excluded from the eval"}
+
+
+@app.get("/api/stores")
+async def api_stores():
+    vs = {}
+    vp = KEYS_DIR / "validation.json"
+    if vp.is_file():
+        try:
+            vs = json.loads(vp.read_text())
+        except Exception:
+            vs = {}
+    return {"stores": [{"store_id": k["store_id"], "level": k.get("level"), "name": k.get("name"), "url": k.get("url"),
+                        "task": k.get("task"), "validator": vs.get(k["store_id"])} for k in load_keys()]}
+
+
+@app.get("/api/keys/{store_id}")
+async def api_key(store_id: str):
+    p = safe_name(f"{Path(store_id).name}.json", KEYS_DIR)
+    return json.loads(p.read_text())
+
+
+@app.get("/api/submissions")
+async def api_submissions():
+    subs: dict[str, dict] = {}
+    for r in all_runs_enriched():
+        sid = r.get("submission")
+        if not sid:
+            continue
+        s = subs.setdefault(sid, {"submission_id": sid, "started_at": r.get("started_at"), "models": set(), "runs": 0,
+                                  "finished": 0, "mode": r.get("mode"), "in_memory": sid in SUBMISSIONS})
+        s["models"].add(r.get("model"))
+        s["runs"] += 1
+        s["finished"] += 1
+        s["started_at"] = min(s["started_at"] or r.get("started_at", ""), r.get("started_at", ""))
+    for sid, sub in SUBMISSIONS.items():
+        s = subs.setdefault(sid, {"submission_id": sid, "started_at": sub["started_at"], "models": set(), "runs": 0,
+                                  "finished": 0, "mode": sub.get("mode", MODE), "in_memory": True})
+        s["models"].update(sub["models"])
+        s["runs"] = max(s["runs"], len(sub["jobs"]))
+        s["finished"] = sum(1 for j in sub["jobs"] if j["status"] == "done")
+    out = [dict(v, models=sorted(m for m in v["models"] if m)) for v in subs.values()]
+    out.sort(key=lambda s: s["started_at"] or "", reverse=True)
+    return {"submissions": out}
+
+
+@app.get("/api/runs")
+async def api_runs(submission: str | None = None, mode: str | None = None, model: str | None = None,
+                   store_id: str | None = None, limit: int = 500):
+    rs = all_runs_enriched()
+    if submission:
+        rs = [r for r in rs if r.get("submission") == submission]
+    if mode:
+        rs = [r for r in rs if r.get("mode") == mode]
+    if model:
+        rs = [r for r in rs if r.get("model") == model]
+    if store_id:
+        rs = [r for r in rs if r.get("store_id") == store_id]
+    rs.sort(key=lambda r: r.get("started_at", ""), reverse=True)
+    return {"runs": [run_summary(r) for r in rs[:limit]], "total": len(rs)}
+
+
+@app.get("/api/runs/{run_id}")
+async def api_run_detail(run_id: str):
+    r = load_run(run_id)
+    if not r:
+        raise HTTPException(404, f"no run {run_id}")
+    out = {k: v for k, v in r.items() if not k.startswith("_")}
+    out["summary"] = run_summary(r)
+    out["checks"] = r.get("_checks")
+    out["score"] = r.get("_score")
+    out["key"] = r.get("_key")
+    out["screenshots"] = [f"/runs/{a['screenshot']}" for a in r.get("actions", []) if a.get("screenshot")]
+    return out
+
+
+@app.get("/api/eval")
+async def api_eval():
+    rs = all_runs_enriched()
+    prod = [r for r in rs if r.get("mode") == "prod"]
+    rows, per_level, levels = comparison_rows(prod)
+    return {"title": f"Offline eval on {repro_block(prod, levels)['stores']} seeded stores", "rows": rows,
+            "per_level": {m: {lv: {"cleared": c[0], "runs": c[1]} for lv, c in cell.items()} for m, cell in per_level.items()},
+            "levels": levels, "reproducibility": repro_block(prod, levels), "limits": LIMITS,
+            "prod_runs": len(prod), "test_runs_excluded": len(rs) - len(prod)}
+
+
+@app.post("/api/report/rebuild")
+async def api_report_rebuild():
+    build_report.main()
+    return {"ok": True, "index": "/report/index.html", "eval_md": "/report/eval.md"}
+
+
+@app.get("/api/openapi-summary")
+async def api_summary():
+    return {"endpoints": [
+        "GET /api/health", "GET /api/models", "GET /api/stores", "GET /api/keys/{store_id}",
+        "POST /api/run {rows:[{url,task,headed}], models:[...]} -> {submission_id}",
+        "GET /api/submissions", "GET /api/submission/{id} (jobs with run summaries; poll every 3s)",
+        "GET /api/runs?submission=&mode=&model=&store_id=", "GET /api/runs/{run_id} (full record, checks, score, key, screenshots)",
+        "POST /api/score {pairs:[{run_file,key_file}]}", "GET /api/eval (comparison table, prod runs only)",
+        "POST /api/report/rebuild", "static: /runs/<screenshot path>, /report/index.html, /report/eval.md",
+    ]}
 
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
