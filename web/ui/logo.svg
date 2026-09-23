@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" width="220" height="56" role="img" aria-label="Upfront — know the final price">
+  <title>Upfront</title>
+  <desc>Two bars: the price first shown, and the price finally charged, with the part that
+  appeared only at checkout capped in amber.</desc>
+
+  <!-- mark -->
+  <rect x="2" y="8" width="40" height="40" rx="11" fill="#2f55ec"/>
+  <rect x="10"   y="29" width="9" height="11" rx="2.9" fill="#ffffff"/>
+  <rect x="25.5" y="23" width="9" height="17" rx="2.9" fill="#ffffff"/>
+  <rect x="25.5" y="14" width="9" height="7"  rx="2.9" fill="#f79009"/>
+
+  <!-- wordmark -->
+  <text x="54" y="31" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="20" font-weight="650" letter-spacing="-0.4" fill="#101828">Upfront</text>
+  <text x="55" y="45" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="10.5" font-weight="500" fill="#98a2b3">Know the final price</text>
+</svg>

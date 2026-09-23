@@ -112,6 +112,11 @@ checkout-auditor/
 
 ## The UI
 
+The product surface is branded **Upfront** — *know the final price before you pay*. The mark is two
+bars, the price first shown and the price finally charged, with the part that appeared only at
+checkout capped in amber; `web/ui/logo.svg` is the standalone lockup. The repo, the harness and
+the eval keep the `checkout-auditor` name.
+
 Two static pages in `web/ui/`, no build step and no framework, mounted by `web.app` at `/ui`:
 
 | Page | URL | What it does |
