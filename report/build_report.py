@@ -116,6 +116,8 @@ def run_section(run: dict, rel_runs: str, internal: bool = False) -> str:
     head = f"<h3>{esc(title)} <span class='tag'>{esc(store)}</span>"
     if internal:
         head += f"<span class='tag'>{esc(run.get('model'))}</span><span class='tag'>{esc(run.get('mode'))}</span>"
+    if run.get("task_variant") and run.get("task_variant") != "key":
+        head += f"<span class='tag'>task: {esc(run.get('task_variant'))}</span>"
     head += f"<span class='tag'>{esc(run.get('status'))}</span></h3>"
     parts.append(head)
     parts.append(f"<div class='muted'>task: {esc(run.get('task'))} · run {esc(started)} · {esc(run.get('wall_seconds'))}s · {esc(run.get('steps'))} steps</div>")

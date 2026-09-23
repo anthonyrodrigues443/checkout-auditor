@@ -130,6 +130,7 @@ async def run_audit(
     runs_dir: Path = RUNS_DIR,
     sdk_env: dict[str, str] | None = None,
     submission: str | None = None,
+    task_variant: str = "key",
     on_event=None,
 ) -> dict[str, Any]:
     from claude_agent_sdk import (
@@ -144,7 +145,7 @@ async def run_audit(
     started = time.time()
     record: dict[str, Any] = {
         "run_id": run_id, "mode": mode, "model": model, "level": level, "store_id": store_id,
-        "store_url": store_url, "task": task, "submission": submission,
+        "store_url": store_url, "task": task, "task_variant": task_variant, "submission": submission,
         "started_at": _now_iso(), "ended_at": None, "wall_seconds": None,
         "steps": 0, "num_turns": 0, "completed": False, "attempted_payment": False,
         "status": "error", "error": None, "checkpoints": {"first_price": None, "cart": None, "final": None},

@@ -1,6 +1,6 @@
 # Offline eval on 0 seeded stores
 
-Generated 2026-09-23T18:13:47 from 0 prod runs (test-mode runs excluded).
+Generated 2026-09-23T18:22:34 from 0 prod runs (test-mode runs excluded).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|

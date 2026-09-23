@@ -59,10 +59,18 @@ async def main(a: argparse.Namespace) -> int:
     submission = a.submission or datetime.now().strftime("%Y%m%d-%H%M%S") + "_" + "+".join(m.replace("claude-", "") for m in models)
     server_proc = ensure_store_server(8000)
     jobs = []
+    alt = {}
+    if a.task_set == "alt":
+        alt = json.loads((ROOT / "runner" / "alt_tasks.json").read_text())
     for level, model, rep in product(a.levels, models, range(1, a.repeats + 1)):
         key = load_key(level)
-        jobs.append({"model": model, "level": level, "repeat": rep, "task": a.task or key["task"],
-                     "store_url": key.get("url") or f"http://localhost:8000/l{level}/", "store_id": key["store_id"]})
+        task = a.task or (alt.get(key["store_id"]) if a.task_set == "alt" else None) or key["task"]
+        if a.task_set == "alt" and key["store_id"] not in alt and not a.task:
+            print(f"skip L{level}: no alt task for {key['store_id']} in runner/alt_tasks.json")
+            continue
+        jobs.append({"model": model, "level": level, "repeat": rep, "task": task,
+                     "store_url": key.get("url") or f"http://localhost:8000/l{level}/", "store_id": key["store_id"],
+                     "task_variant": "custom" if a.task else a.task_set})
     print(f"mode={mode} submission={submission} jobs={len(jobs)} concurrency={a.concurrency} cap=${a.max_total_usd}")
     spent = 0.0
     done: list[dict] = []
@@ -94,6 +102,7 @@ async def main(a: argparse.Namespace) -> int:
                     level=job["level"], store_id=job["store_id"], mode=mode, repeat=job["repeat"],
                     max_turns=a.max_turns, max_budget_usd=a.max_budget_usd, effort=a.effort, overlay=a.headed,
                     window_title=job["model"] if a.headed else None, sdk_env=sdk_env, submission=submission,
+                    task_variant=job["task_variant"],
                 )
                 rec["_verdict"] = try_score(rec)
                 spent += rec.get("cost_usd") or 0.0
@@ -131,6 +140,7 @@ def parse(argv=None) -> argparse.Namespace:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--task", default=None, help="override the task sentence for every job")
     ap.add_argument("--submission", default=None, help="name grouping these runs in the audit report")
+    ap.add_argument("--task-set", default="key", choices=["key", "alt"], help="key = the store's task; alt = second sentence from runner/alt_tasks.json")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--max-turns", type=int, default=DEFAULT_MAX_TURNS)
     ap.add_argument("--max-budget-usd", type=float, default=DEFAULT_MAX_BUDGET_USD, help="per-run cap")
