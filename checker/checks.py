@@ -103,7 +103,7 @@ def _items(checkpoint) -> list[dict]:
 def match_lines(final_items: list[dict], first_items: list[dict]) -> list[dict]:
     """Pair every final line with at most one first_price line.
 
-    Pass 1 pairs by normalised label, pass 2 pairs leftovers by equal positive amount.
+    Pass 1 pairs by exact normalised label, pass 1b by label containment or shared distinctive word, pass 2 pairs leftovers by equal positive amount.
     Each first_price line is used once, so two ₹49 lines at final need two ₹49 lines at first.
     Returns [{"final": item, "first": item|None, "by": "label"|"amount"|None}, ...].
     """
@@ -115,6 +115,18 @@ def match_lines(final_items: list[dict], first_items: list[dict]) -> list[dict]:
             continue
         for j in remaining:
             if normalise_label(first_items[j].get("label")) == n:
+                pair["first"], pair["by"] = first_items[j], "label"
+                remaining.remove(j)
+                break
+    for pair in pairs:
+        if pair["first"] is not None:
+            continue
+        n = normalise_label(pair["final"].get("label"))
+        if not n:
+            continue
+        for j in remaining:
+            m = normalise_label(first_items[j].get("label"))
+            if m and (n in m or m in n or (_distinctive(n) & _distinctive(m))):
                 pair["first"], pair["by"] = first_items[j], "label"
                 remaining.remove(j)
                 break
@@ -202,7 +214,7 @@ def check_basket_sneaking(final, first, actions=None) -> list[dict]:
         if amount is None or amount <= 0:
             continue
         pre = bool(item.get("pre_selected"))
-        if not pre and is_charge_label(item.get("label")):
+        if is_charge_label(item.get("label")):
             continue
         attribution, hit = attribute_to_agent(item.get("label"), action_texts)
         evidence = (
@@ -225,7 +237,7 @@ def check_drip_pricing(final, first) -> list[dict]:
     first_total = _num((first or {}).get("total"))
     for pair in match_lines(_items(final), _items(first)):
         item = pair["final"]
-        if pair["first"] is not None or item.get("chosen_by_me") or item.get("pre_selected"):
+        if pair["first"] is not None or item.get("chosen_by_me"):
             continue
         amount = _num(item.get("amount"))
         if amount is None or amount <= 0 or not is_charge_label(item.get("label")):
