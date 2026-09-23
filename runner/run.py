@@ -84,8 +84,13 @@ async def main(a: argparse.Namespace) -> int:
     stop_launching = False
     first_prod_done = False
 
+    headed_first = os.environ.get("AUDITOR_HEADED_FIRST") == "1" and not a.headed
     async with async_playwright() as pw:
         browsers: dict[str, object] = {}
+        first_browser = None
+        if headed_first:
+            first_browser = await launch_browser(pw, headed=True, position=(0, 0), size=(min(900, a.screen_width), a.screen_height))
+            print("AUDITOR_HEADED_FIRST=1: the first job runs in a visible window, the rest headless")
         if a.headed:
             n = len(models)
             w = max(420, a.screen_width // n)
@@ -95,19 +100,19 @@ async def main(a: argparse.Namespace) -> int:
             shared = await launch_browser(pw, headed=False)
             browsers = {m: shared for m in models}
 
-        async def one(job: dict):
+        async def one(job: dict, show: bool = False):
             nonlocal spent, stop_launching, first_prod_done
             async with sem:
                 if stop_launching:
                     print(f"skip {job['model']} L{job['level']} r{job['repeat']}: spend cap reached")
                     return None
                 t0 = time.time()
-                print(f"start {job['model']} L{job['level']} r{job['repeat']} ({job['task']})")
+                print(f"start {job['model']} L{job['level']} r{job['repeat']} ({job['task']})" + ("  [visible window]" if show else ""))
                 rec = await run_audit(
-                    browsers[job["model"]], model=job["model"], store_url=job["store_url"], task=job["task"],
-                    level=job["level"], store_id=job["store_id"], mode=mode, repeat=job["repeat"],
-                    max_turns=a.max_turns, max_budget_usd=a.max_budget_usd, effort=a.effort, overlay=a.headed,
-                    window_title=job["model"] if a.headed else None, sdk_env=sdk_env, submission=submission,
+                    first_browser if show else browsers[job["model"]], model=job["model"], store_url=job["store_url"],
+                    task=job["task"], level=job["level"], store_id=job["store_id"], mode=mode, repeat=job["repeat"],
+                    max_turns=a.max_turns, max_budget_usd=a.max_budget_usd, effort=a.effort, overlay=a.headed or show,
+                    window_title=job["model"] if (a.headed or show) else None, sdk_env=sdk_env, submission=submission,
                     task_variant=job["task_variant"],
                 )
                 rec["_verdict"] = try_score(rec)
@@ -124,7 +129,9 @@ async def main(a: argparse.Namespace) -> int:
                     print(f"   spend cap ${a.max_total_usd} reached; no new runs will start")
                 return rec
 
-        await asyncio.gather(*(one(j) for j in jobs))
+        await asyncio.gather(*(one(j, show=(headed_first and i == 0)) for i, j in enumerate(jobs)))
+        if first_browser is not None:
+            await first_browser.close()
         for b in set(id(x) for x in browsers.values()):
             pass
         for b in {id(x): x for x in browsers.values()}.values():
