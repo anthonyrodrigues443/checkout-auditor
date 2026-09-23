@@ -1,11 +1,11 @@
 # Offline eval on 20 seeded stores
 
-Generated 2026-09-23T19:02:12 from 122 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T19:02:56 from 127 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 13 | 17 | 13/16 | 0 (n=1) | 13/13 | 13/13 | 12.5 | 31.6 | 0.181 |
-| claude-fable-5-1 | 8 | 17 | 8/8 | 0 (n=1) | 8/8 | 8/8 | 11.4 | 35.4 | 0.161 |
+| claude-fable-5 | 15 | 17 | 15/18 | 0 (n=1) | 15/15 | 15/15 | 12.3 | 30.9 | 0.178 |
+| claude-fable-5-1 | 11 | 17 | 11/11 | 0 (n=1) | 11/11 | 11/11 | 11.3 | 33.7 | 0.158 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
 | claude-opus-5 | 98 | 20 | 142/146 | 0 (n=5) | 98/98 | 98/98 | 13.6 | 34.0 | 0.098 |
 
@@ -13,8 +13,8 @@ Generated 2026-09-23T19:02:12 from 122 runs (debug test-mode runs excluded; cred
 
 | model | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 | L17 | L18 | L19 | L20 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 2/5 | 0/0 | 0/0 | 0/0 |
-| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 4/4 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 4/7 | 0/0 | 0/0 | 0/0 |
+| claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 7/7 | 0/0 | 0/0 | 0/0 |
 | claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
 | claude-opus-5 | 5/5 | 5/5 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 6/6 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 2/6 | 3/3 | 3/3 | 3/3 |
 
@@ -23,8 +23,10 @@ Generated 2026-09-23T19:02:12 from 122 runs (debug test-mode runs excluded; cred
 | model | wording | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 | L16 | L17 | L18 | L19 | L20 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | claude-fable-5 | key | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | 2/2 | · | · | · |
+| claude-fable-5 | alt | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 2/2 | · | · | · |
 | claude-fable-5 | hard | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 0/3 | · | · | · |
-| claude-fable-5-1 | key | 1/1 | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | 1/1 | · | · | · |
+| claude-fable-5-1 | key | 1/1 | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | 2/2 | · | · | · |
+| claude-fable-5-1 | alt | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 2/2 | · | · | · |
 | claude-fable-5-1 | hard | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | 3/3 | · | · | · |
 | claude-haiku-4-5-20251001 | key | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
 | claude-opus-5 | key | 3/3 | 3/3 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 1/1 | 1/1 | 1/1 | 1/1 |
@@ -78,9 +80,9 @@ Generated 2026-09-23T19:02:12 from 122 runs (debug test-mode runs excluded; cred
  "runs_per_cell": [
   1,
   3,
-  4,
   5,
-  6
+  6,
+  7
  ],
  "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 --repeats 1 && .venv/bin/python -m report.build_report"
 }
