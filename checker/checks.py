@@ -9,7 +9,7 @@ import re
 
 TOLERANCE = 0.01
 
-SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount")
+SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount", "price_change", "unexplained_gap")
 
 CCPA_PATTERNS = {
     "basket_sneaking": "basket sneaking",
