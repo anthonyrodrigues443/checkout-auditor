@@ -63,13 +63,16 @@ async def main(a: argparse.Namespace) -> int:
     server_proc = ensure_store_server(8000)
     jobs = []
     alt = {}
-    if a.task_set == "alt":
-        alt = json.loads((ROOT / "runner" / "alt_tasks.json").read_text())
+    if a.task_set != "key":
+        f = ROOT / "runner" / ("alt_tasks.json" if a.task_set == "alt" else f"tasks_{a.task_set}.json")
+        if not f.exists():
+            raise SystemExit(f"no task set file {f}")
+        alt = json.loads(f.read_text())
     for level, model, rep in product(a.levels, models, range(1, a.repeats + 1)):
         key = load_key(level)
-        task = a.task or (alt.get(key["store_id"]) if a.task_set == "alt" else None) or key["task"]
-        if a.task_set == "alt" and key["store_id"] not in alt and not a.task:
-            print(f"skip L{level}: no alt task for {key['store_id']} in runner/alt_tasks.json")
+        task = a.task or (alt.get(key["store_id"]) if a.task_set != "key" else None) or key["task"]
+        if a.task_set != "key" and key["store_id"] not in alt and not a.task:
+            print(f"skip L{level}: no {a.task_set} task for {key['store_id']}")
             continue
         jobs.append({"model": model, "level": level, "repeat": rep, "task": task,
                      "store_url": key.get("url") or f"http://localhost:8000/l{level}/", "store_id": key["store_id"],
@@ -143,7 +146,7 @@ def parse(argv=None) -> argparse.Namespace:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--task", default=None, help="override the task sentence for every job")
     ap.add_argument("--submission", default=None, help="name grouping these runs in the audit report")
-    ap.add_argument("--task-set", default="key", choices=["key", "alt"], help="key = the store's task; alt = second sentence from runner/alt_tasks.json")
+    ap.add_argument("--task-set", default="key", help="key = the store's task; alt = runner/alt_tasks.json; <name> = runner/tasks_<name>.json")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--max-turns", type=int, default=DEFAULT_MAX_TURNS)
     ap.add_argument("--max-budget-usd", type=float, default=DEFAULT_MAX_BUDGET_USD, help="per-run cap")
