@@ -429,3 +429,12 @@ def test_payment_select_mentioning_card_does_not_blame_agent_for_greeting_card()
     out = check_run(run)
     f = [f for f in out["findings"] if f["check"] == "basket_sneaking"][0]
     assert f["attribution"] == "site"
+
+
+def test_first_price_labelled_price_pairs_with_the_product_by_role():
+    out = _run_with([_li("Price", 1299), _li("Delivery", 0)], 1299,
+                    [_li("Handloom Cotton Kurta", 1349, chosen=True), _li("Delivery (Standard)", 0, pre=True)], 1349)
+    kinds = [(f["check"], f["amount"]) for f in out["findings"]]
+    assert ("price_change", 50.0) in kinds
+    assert ("unexplained_gap", -1299.0) not in kinds
+    assert out["gap"]["unexplained"] == 0

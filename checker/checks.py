@@ -154,6 +154,17 @@ def match_lines(final_items: list[dict], first_items: list[dict]) -> list[dict]:
                 pair["first"], pair["by"] = first_items[j], "amount"
                 remaining.remove(j)
                 break
+    # pass 3, by role: the one product the shopper chose pairs with the one product-like line at first price,
+    # even when the agent labelled the first screen "Price" and the final screen with the product name.
+    unmatched_chosen = [p for p in pairs if p["first"] is None and p["final"].get("chosen_by_me")
+                        and not is_charge_label(p["final"].get("label")) and not is_aggregate_label(p["final"].get("label"))
+                        and (_num(p["final"].get("amount")) or 0) > 0]
+    unmatched_first = [j for j in remaining if not is_charge_label(first_items[j].get("label"))
+                       and not is_aggregate_label(first_items[j].get("label")) and (_num(first_items[j].get("amount")) or 0) > 0]
+    if len(unmatched_chosen) == 1 and len(unmatched_first) == 1:
+        j = unmatched_first[0]
+        unmatched_chosen[0]["first"], unmatched_chosen[0]["by"] = first_items[j], "role"
+        remaining.remove(j)
     return pairs
 
 
@@ -273,7 +284,7 @@ def check_price_changes(final, first) -> list[dict]:
     """A line shown at first_price whose amount is different at final (bait and switch on the price itself)."""
     findings = []
     for pair in match_lines(_items(final), _items(first)):
-        if pair["by"] != "label" or is_aggregate_label(pair["final"].get("label")):
+        if pair["by"] not in ("label", "role") or is_aggregate_label(pair["final"].get("label")):
             continue
         a, b = _num(pair["first"].get("amount")), _num(pair["final"].get("amount"))
         if a is None or b is None or abs(a - b) <= TOLERANCE:
