@@ -22,6 +22,7 @@ PAYMENT_WORDS = re.compile(
 )
 CHECKPOINT_NAMES = ("first_price", "cart", "final")
 TEXT_CAP = 12000  # characters of visible page text sent to the model per read_page
+SNAPSHOT_VERSION = 2  # 2: checkbox/radio labels come from their <label>, not the input value
 
 SNAPSHOT_JS = r"""
 () => {
@@ -44,12 +45,21 @@ SNAPSHOT_JS = r"""
     }
     return false;
   };
-  const label = (el) => {
-    const t = (el.innerText || el.value || el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || '').trim().replace(/\s+/g, ' ');
-    if (t) return t;
+  const labelText = (el) => {
     if (el.id) { const l = document.querySelector(`label[for="${el.id}"]`); if (l) return l.innerText.trim().replace(/\s+/g, ' '); }
     const wrap = el.closest('label'); if (wrap) return wrap.innerText.trim().replace(/\s+/g, ' ');
-    return el.getAttribute('name') || el.tagName.toLowerCase();
+    return '';
+  };
+  const label = (el) => {
+    const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    if (tag === 'input' && (type === 'checkbox' || type === 'radio')) {
+      // a box's value is "on"; its name is the label text next to it
+      return labelText(el) || el.getAttribute('aria-label') || el.getAttribute('name') || type;
+    }
+    const t = (el.innerText || el.value || el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || '').trim().replace(/\s+/g, ' ');
+    if (t) return t;
+    return labelText(el) || el.getAttribute('name') || tag;
   };
   const sel = 'a[href], button, input, select, textarea, [role=button], [role=link], [onclick]';
   const els = Array.from(document.querySelectorAll(sel)).filter(visible);

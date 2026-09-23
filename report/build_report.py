@@ -308,6 +308,7 @@ def repro_block(prod: list[dict], levels: list) -> dict:
     return {
         "models": sorted({r["model"] for r in prod}),
         "credential_modes": sorted({r.get("mode") for r in prod}),
+        "snapshot_versions": sorted({(r.get("settings") or {}).get("snapshot_version", 1) for r in prod}),
         "max_turns": settings.get("max_turns"), "max_budget_usd": settings.get("max_budget_usd"),
         "effort": settings.get("effort"), "thinking": settings.get("thinking"),
         "prompt_version": settings.get("prompt_version"), "prompt_commit": settings.get("prompt_commit"),
