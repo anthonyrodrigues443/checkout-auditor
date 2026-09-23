@@ -192,6 +192,16 @@ function renderResults(results) {
 
 /* ---- the comparison table (how each model did overall) ---- */
 
+/** cleared/runs on the divergence cells for one model. Blank when the backend predates the field
+    or nothing diverged — an empty suite is not a zero score. */
+function divCell(div, model) {
+  const t = div && div.totals && div.totals[model];
+  if (!t || !t.runs) return '<span class="muted">—</span>';
+  const pct = t.cleared / t.runs;
+  const kind = pct >= 0.75 ? 'ok' : pct <= 0.25 ? 'no' : '';
+  return `<span class="${kind}">${t.cleared}/${t.runs}</span>`;
+}
+
 function renderComparison(ev) {
   $('#cmp-card').hidden = false;
   $('#cmp-title').textContent = ev.title || 'Model comparison';
@@ -200,10 +210,15 @@ function renderComparison(ev) {
     return;
   }
   const levels = ev.levels || [];
+  // Divergence comes from the same divergence_suite that writes report/eval.md, so this
+  // column and the committed table cannot disagree. Absent on an older backend.
+  const div = ev.divergence && ev.divergence.cells ? ev.divergence : null;
   // Sixteen levels all carry meaning, so this stays a table rather than becoming a chart.
   const head = `<tr><th>Model</th><th class="num">Runs</th><th class="num">Highest cleared</th>
     <th class="num">Caught/seeded</th><th class="num">False alarms L1</th><th class="num">Stopped at Pay</th>
-    <th class="num">Completed</th><th class="num">Avg steps</th><th class="num">Avg s</th><th class="num">Avg $</th>
+    <th class="num">Completed</th>
+    <th class="num" title="Cleared/runs over only the cells where the models disagreed. Selected by outcome, so not a pass rate.">Divergence${div ? ` <span class="muted">(${div.cells})</span>` : ''}</th>
+    <th class="num">Avg steps</th><th class="num">Avg s</th><th class="num">Avg $</th>
     ${levels.map((l) => `<th class="num">L${esc(l)}</th>`).join('')}</tr>`;
 
   // Key names come straight from comparison_rows in report/build_report.py: highest, fa_l1,
@@ -218,6 +233,7 @@ function renderComparison(ev) {
       <td class="num">${esc(r.fa_l1)}</td>
       <td class="num">${esc(r.stopped)}</td>
       <td class="num">${esc(r.completed)}</td>
+      <td class="num">${divCell(div, r.model)}</td>
       <td class="num">${esc(r.steps)}</td>
       <td class="num">${esc(r.seconds)}</td>
       <td class="num">${esc(r.cost)}</td>
@@ -237,6 +253,11 @@ function renderComparison(ev) {
     <p class="muted" style="margin:10px 0 0;font-size:12.5px">
       ${ev.prod_runs} measured runs counted; ${ev.test_runs_excluded} debug run${ev.test_runs_excluded === 1 ? '' : 's'} excluded.
       Pass rates are shown as cleared/runs, never a single run presented as a rate.</p>
+    ${div ? `<p class="muted" style="margin:6px 0 0;font-size:12.5px"><b>Divergence</b> covers the
+      ${div.cells} cell${div.cells === 1 ? '' : 's'} (one store x one task wording) where at least one
+      model cleared and at least one failed${div.hard_cells ? `, with ${div.hard_cells} further cell${div.hard_cells === 1 ? '' : 's'} no model cleared` : ''}.
+      Those cells are picked by outcome, so the column shows where the models separate — it is not a
+      pass rate and does not belong on a slide as one.</p>` : ''}
     ${limits ? `<details class="disclose"><summary>Honest limits</summary><ul>${limits}</ul></details>` : ''}
     <details class="disclose"><summary>Reproducibility block</summary>
       <pre>${esc(JSON.stringify(ev.reproducibility || {}, null, 1))}</pre></details>`;

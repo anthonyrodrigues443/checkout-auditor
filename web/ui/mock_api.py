@@ -76,7 +76,7 @@ def store_for_url(url: str) -> tuple[str | None, int | str | None]:
 
 
 def synth_run(model: str, url: str, task: str, submission: str | None, started: datetime,
-              mode: str = "prod", catches_all: bool = True) -> dict:
+              mode: str = "prod", catches_all: bool = True, variant: str = "key") -> dict:
     """A run record shaped like the real harness writes, derived from the store's answer key."""
     store_id, level = store_for_url(url)
     key = KEYS.get(store_id or "", {})
@@ -115,6 +115,7 @@ def synth_run(model: str, url: str, task: str, submission: str | None, started: 
         "task": task,
         "mode": mode,
         "submission": submission,
+        "task_variant": variant,
         "status": "ok",
         "error": None,
         "completed": True,
@@ -138,14 +139,29 @@ def synth_run(model: str, url: str, task: str, submission: str | None, started: 
     }
 
 
+# Which model misses a trap on which store. Without this every mock run clears, every cell is
+# unanimous, and the divergence column would render as an untested dash.
+MISSES = {
+    "l3": {"claude-opus-5"},
+    "l4": {"claude-opus-5", "claude-fable-5"},
+    "l6": {"claude-fable-5"},
+    "l8": {"claude-opus-5"},
+    "l12": {"claude-fable-5-1", "claude-fable-5"},  # a cell that goes the other way
+    "l13": {"claude-opus-5", "claude-fable-5", "claude-fable-5-1"},  # hard for everyone, not divergence
+}
+REPEATS = 2
+
+
 def seed_history() -> None:
-    """A handful of finished runs from 'earlier in the evening' so the eval page has something."""
+    """Finished runs from 'earlier in the evening' so the eval page has something to score."""
     base = datetime.now() - timedelta(hours=2)
     for i, (store_id, key) in enumerate(sorted(KEYS.items())):
         for j, model in enumerate(MODELS):
-            started = base + timedelta(minutes=i * 6 + j * 2)
-            RUNS.append(synth_run(model, key["url"], key["task"], f"{base.strftime('%Y%m%d-%H%M%S')}_ladder",
-                                  started, mode="prod", catches_all=True))
+            for rep in range(REPEATS):
+                started = base + timedelta(minutes=i * 6 + j * 2, seconds=rep * 17)
+                RUNS.append(synth_run(model, key["url"], key["task"],
+                                      f"{base.strftime('%Y%m%d-%H%M%S')}_ladder", started, mode="prod",
+                                      catches_all=model not in MISSES.get(store_id, ())))
 
 
 seed_history()
@@ -217,6 +233,38 @@ def score_pair(run_file: str, key_file: str | None) -> dict:
     return out
 
 
+def divergence(prod: list[dict]) -> dict:
+    """Mirror of divergence_suite in report/build_report.py, over the mock's own runs.
+
+    A cell is one store x one wording. It diverges when at least two models ran it and their
+    clear rates are not all equal; it is "hard" when they agree but somebody still failed."""
+    cells: dict[tuple, list[int]] = {}
+    for r in prod:
+        k = (r["model"], str(r.get("level")), r.get("task_variant") or "key")
+        c = cells.setdefault(k, [0, 0])
+        c[0] += 1 if r.get("level_cleared") else 0
+        c[1] += 1
+    models = [m for m in MODELS if any(k[0] == m for k in cells)]
+    levels = sorted({k[1] for k in cells}, key=lambda x: (len(x), x))
+    variants = sorted({k[2] for k in cells})
+    picked, hard = [], []
+    for lv in levels:
+        for v in variants:
+            have = {m: cells[(m, lv, v)] for m in models if (m, lv, v) in cells}
+            if len(have) < 2:
+                continue
+            rates = [c / n for c, n in have.values() if n]
+            if rates and max(rates) > min(rates):
+                picked.append(have)
+            elif any(c < n for c, n in have.values()):
+                hard.append(have)
+    totals = {m: {"cleared": sum(h[m][0] for h in picked if m in h),
+                  "runs": sum(h[m][1] for h in picked if m in h)} for m in models}
+    return {"cells": len(picked), "hard_cells": len(hard), "totals": totals,
+            "note": "cells where at least one model cleared and at least one failed; "
+                    "selected by outcome, so not a pass rate"}
+
+
 def eval_table() -> dict:
     prod = [r for r in RUNS if r.get("mode") in ("prod", "cli")]
     levels = sorted({str(r["level"]) for r in prod if r.get("level")}, key=lambda s: (len(s), s))
@@ -254,6 +302,7 @@ def eval_table() -> dict:
                             "command": "python -m runner.run --models ... --levels 1 2 3 4 5 6 7 8 --repeats 1"},
         "limits": ["MOCK DATA - these numbers come from web/ui/mock_api.py, not from real runs."],
         "prod_runs": len(prod), "test_runs_excluded": len(RUNS) - len(prod),
+        "divergence": divergence(prod),
     }
 
 

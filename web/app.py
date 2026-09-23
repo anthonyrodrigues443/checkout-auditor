@@ -34,7 +34,8 @@ from agent.harness import (  # noqa: E402
 )
 from checker.score import score_run  # noqa: E402
 from report.build_report import (  # noqa: E402
-    COMPARISON_MODELS, CSS, LIMITS, comparison_rows, enrich, esc, load_runs, repro_block, rupees, run_section,
+    COMPARISON_MODELS, CSS, LIMITS, comparison_rows, divergence_suite, enrich, esc, load_runs, repro_block,
+    rupees, run_section,
 )
 import report.build_report as build_report  # noqa: E402
 
@@ -680,10 +681,16 @@ async def api_eval():
     rs = all_runs_enriched()
     prod = [r for r in rs if r.get("mode") in ("prod", "cli") and r.get("model") in COMPARISON_MODELS]
     rows, per_level, levels = comparison_rows(prod)
+    # Same divergence_suite eval.md uses, so the UI column and the committed table cannot drift.
+    ds = divergence_suite(prod)
     return {"title": f"Offline eval on {repro_block(prod, levels)['stores']} seeded stores", "rows": rows,
             "per_level": {m: {lv: {"cleared": c[0], "runs": c[1]} for lv, c in cell.items()} for m, cell in per_level.items()},
             "levels": levels, "reproducibility": repro_block(prod, levels), "limits": LIMITS,
-            "prod_runs": len(prod), "test_runs_excluded": len(rs) - len(prod)}
+            "prod_runs": len(prod), "test_runs_excluded": len(rs) - len(prod),
+            "divergence": {"cells": len(ds["cells"]), "hard_cells": len(ds["hard"]),
+                           "totals": {m: {"cleared": c, "runs": n} for m, (c, n) in ds["totals"].items()},
+                           "note": "cells where at least one model cleared and at least one failed; "
+                                   "selected by outcome, so not a pass rate"}}
 
 
 @app.post("/api/report/rebuild")
