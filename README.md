@@ -130,6 +130,53 @@ The pages are plain HTML/CSS/JS on purpose: nothing on the demo path needs a bun
 
 `python web/ui/mock_api.py` serves the same endpoints and the pages on the same port, with runs synthesised from the real answer keys. It needs nothing but the standard library (no SDK, no Playwright, no API key), so the front end can be worked on while runs are happening elsewhere. Every page shows a banner when it is talking to the mock. It is a development aid only; `web/app.py` never imports it.
 
+## Hosting it
+
+```sh
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python claude-agent-sdk playwright python-dotenv fastapi uvicorn
+.venv/bin/playwright install chromium
+
+AUDITOR_MODE=test .venv/bin/python -m web.app
+```
+
+On Windows the interpreter is `.venv/Scripts/python.exe` and the launcher `.venv/Scripts/playwright.exe`.
+Note `fastapi` and `uvicorn`: the Quickstart install line above predates `web/app.py` and leaves them out,
+so the app will not import without them.
+
+The app serves everything on one port and starts the store server on :8000 itself:
+
+| URL | |
+|---|---|
+| `http://127.0.0.1:8080/ui/` | the audit page |
+| `http://127.0.0.1:8080/ui/eval.html` | the eval page |
+| `http://127.0.0.1:8080/submission/<id>` | one submission's grouped report |
+| `http://127.0.0.1:8080/report/eval.md` | the committed table |
+| `http://localhost:8000/l1/` .. `/l40/` | the seeded stores |
+
+`runs/` is gitignored, so a fresh clone starts with no runs: the eval table and the divergence column
+are empty until runs exist on that machine.
+
+## Running a real site
+
+Paste any URL into the audit page. Nothing is hardcoded to the seeded stores — `identify_store` slugs
+an unknown host and stamps the level `web`, and the agent reads and clicks exactly as it does locally.
+A real-site run has no answer key, so it comes back **unscored**: the findings still appear, and the
+eval page labels the panel `unscored — no answer key` rather than inventing a verdict.
+
+What holds today and what does not:
+
+- **Works.** Guest flows the agent can reach by clicking alone: product page, add to cart, view the
+  cart, options, and the order summary. The three checkpoints and all six checks behave the same.
+- **Stops at typing.** There is no typing tool, by design — it is what makes "the agent cannot pay"
+  true rather than a promise. Any real checkout that needs an email, an address or a card typed in
+  ends the run there. This is the guardrail working, not a bug.
+- **No saved session.** `BrowserSession.open()` already forwards `**context_kwargs` to
+  `new_context`, so `storage_state=` would work, but nothing passes it and there is no
+  `save_session.py` yet. Until both exist, a site that needs a login cannot be audited.
+- **Care.** Real runs hit someone else's servers. Keep to one run at a time, respect the site's terms,
+  and never point a batch at a live shop.
+
 ## Backend API (for the UI)
 
 `AUDITOR_MODE=prod .venv/bin/python -m web.app` serves a JSON API on http://127.0.0.1:8080 with CORS open. The HTML pages in `web/app.py` are a reference only; the real UI is `web/ui/` (see above) and calls these:
