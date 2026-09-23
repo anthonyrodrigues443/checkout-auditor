@@ -1,0 +1,33 @@
+{
+  "store_id": "l6",
+  "level": 6,
+  "name": "Paper Trail",
+  "url": "http://localhost:8000/l6/",
+  "task": "Buy one A5 leather notebook with standard delivery.",
+  "first_price": 899,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Platform fee",
+      "amount": 19,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "pre_ticked_addon",
+      "label": "Gift wrap",
+      "amount": 25,
+      "scored": true,
+      "pattern": "basket sneaking"
+    }
+  ],
+  "expected_final_total": 943,
+  "stop_point": "summary"
+}

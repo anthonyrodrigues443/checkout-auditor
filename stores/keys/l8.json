@@ -1,0 +1,59 @@
+{
+  "store_id": "l8",
+  "level": 8,
+  "name": "Trail Kit",
+  "url": "http://localhost:8000/l8/",
+  "task": "Buy one 40 L trekking backpack with express delivery and pay by cash on delivery.",
+  "first_price": 2350,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Express delivery",
+      "amount": 129
+    },
+    {
+      "label": "Cash on delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Damage cover",
+      "amount": 59,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "delivery_triggered_fee",
+      "label": "Packaging charge",
+      "amount": 29,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "misleading_discount",
+      "label": "Monsoon deal: ₹150 off",
+      "amount": -60,
+      "claimed": -150,
+      "scored": true,
+      "pattern": null
+    },
+    {
+      "type": "cod_surcharge",
+      "label": "Cash on delivery charge",
+      "amount": 49,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "early_pay_button",
+      "label": "Pay now",
+      "amount": 0,
+      "scored": false,
+      "pattern": "false urgency"
+    }
+  ],
+  "expected_final_total": 2556,
+  "stop_point": "summary"
+}

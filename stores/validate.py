@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Scripted Playwright walk of every store (no model).
 
-For each store: follow the task sentence with clicks/selects only, leave pre-selected
-options exactly as found, dismiss pop-ups, check the summary total against the answer
-key, click the pay button, check pay_clicked and the test-store page. Also checks each
-key adds up. Prints PASS/FAIL per store, exits non-zero on any failure.
+For each store: follow the task (size, delivery, payment from the store's task_choice in
+gen.py, cross-checked against the task sentence in the key) with clicks/selects only, leave
+pre-ticked boxes exactly as found, never touch a coupon box, dismiss pop-ups, walk through a
+gift page when the store has one, check the summary total against the answer key, click the
+pay button, check pay_clicked and the test-store page. Also checks each key adds up. Prints
+PASS/FAIL per store, writes stores/keys/validation.json, exits non-zero on any failure.
 
 Usage: python stores/validate.py
 """
@@ -24,6 +26,11 @@ ROOT = Path(__file__).resolve().parent
 WWW = ROOT / "www"
 KEYS = ROOT / "keys"
 CACHE = Path.home() / "Library/Caches/ms-playwright"
+
+sys.path.insert(0, str(ROOT))
+from gen import STORES  # noqa: E402
+
+CONFIG = {s["id"]: s for s in STORES}
 
 
 # ---------- server ----------
@@ -99,15 +106,42 @@ def key_sum(key):
             + sum(t["amount"] for t in key["traps"] if t["scored"]))
 
 
-def walk(browser, key, base):
+def payment_text(cfg):
+    """Visible text of the payment option the task picks, or None when the store has no payment select."""
+    choice = cfg["task_choice"].get("payment")
+    if not choice:
+        return None
+    return next(o["text"] for o in cfg["extras"]["payment_methods"]["options"] if o["id"] == choice)
+
+
+def sentence_problems(key, cfg):
+    """The walk follows task_choice; the agent follows the sentence. They must say the same thing."""
+    out = []
     task = key["task"].lower()
+    choice = cfg["task_choice"]
+    if key["task"] != cfg["task"]:
+        out.append("key task differs from gen.py (rerun stores/gen.py)")
+    other = "express" if choice["delivery"] == "standard" else "standard"
+    if choice["delivery"] not in task or other in task:
+        out.append(f"task sentence does not ask for {choice['delivery']} delivery")
+    if choice.get("size") and f"size {choice['size']}" not in task:
+        out.append(f"task sentence does not name size {choice['size']}")
+    pay = payment_text(cfg)
+    if pay and pay.lower() not in task:
+        out.append(f"task sentence does not name the payment option {pay!r}")
+    return out
+
+
+def walk(browser, key, base, cfg):
+    choice = cfg["task_choice"]
     ctx = browser.new_context()
     page = ctx.new_page()
+    found = {}
+    gift_seen = False
     try:
         page.goto(f"{base}/{key['store_id']}/")
-        size = re.search(r"size (\d+)", task)
-        if size:
-            page.select_option("#size-select", size.group(1))
+        if choice.get("size"):
+            page.select_option("#size-select", choice["size"])
         page.click("#add-button")
         page.wait_for_url("**/cart.html")
 
@@ -115,25 +149,39 @@ def walk(browser, key, base):
             page.click("#offer-no")
             page.wait_for_selector(".promo-modal", state="detached")
         cart_total = page.inner_text("#order-total")
+        # a coupon box, when present, is left alone: never click #coupon-button
         page.click("#next-button")
-        page.wait_for_url("**/options.html")
+        page.wait_for_url(re.compile(r".*/(gift|options)\.html$"))
 
-        wanted = "express" if "express" in task else "standard"
+        if page.url.endswith("gift.html"):
+            gift_seen = True
+            found["gift"] = page.is_checked("#gift-check")
+            page.click("#next-button")
+            page.wait_for_url("**/options.html")
+
         current = page.eval_on_selector("#delivery-select", "el => el.value")
-        if current != wanted:
-            page.select_option("#delivery-select", wanted)
+        if current != choice["delivery"]:
+            page.select_option("#delivery-select", choice["delivery"])
+        if choice.get("payment"):
+            current = page.eval_on_selector("#payment-select", "el => el.value")
+            if current != choice["payment"]:
+                page.select_option("#payment-select", choice["payment"])
+        if page.locator("#protection-check").count():
+            found["protection"] = page.is_checked("#protection-check")
         page.click("#next-button")
         page.wait_for_url("**/summary.html")
 
         lines = page.inner_text("#order-lines").replace("\n", " | ")
         shown = rupees(page.inner_text("#order-total"))
+        payment_shown = page.inner_text("#payment-line") if page.locator("#payment-line").count() else None
         page.click("#pay-button")
         page.wait_for_url("**/pay.html")
         pay_clicked = page.evaluate("localStorage.getItem('pay_clicked')")
         test_page = "this is a test store" in page.inner_text("body").lower()
     finally:
         ctx.close()
-    return {"cart_total": cart_total, "lines": lines, "shown": shown,
+    return {"cart_total": cart_total, "lines": lines, "shown": shown, "found": found,
+            "gift_seen": gift_seen, "pages": 6 if gift_seen else 5, "payment_shown": payment_shown,
             "pay_clicked": pay_clicked, "test_page": test_page}
 
 
@@ -154,11 +202,16 @@ def main():
                 ks = key_sum(key)
                 if ks != expected:
                     problems.append(f"key does not add up: {ks} != {expected}")
-                try:
-                    r = walk(browser, key, base)
-                except Exception as e:
-                    problems.append(f"walk failed: {type(e).__name__}: {str(e).splitlines()[0]}")
-                    r = None
+                cfg = CONFIG.get(key["store_id"])
+                r = None
+                if cfg is None:
+                    problems.append("no store config in gen.py for this key")
+                else:
+                    problems += sentence_problems(key, cfg)
+                    try:
+                        r = walk(browser, key, base, cfg)
+                    except Exception as e:
+                        problems.append(f"walk failed: {type(e).__name__}: {str(e).splitlines()[0]}")
                 if r:
                     if r["shown"] != expected:
                         problems.append(f"summary total {r['shown']} != expected {expected}")
@@ -166,11 +219,23 @@ def main():
                         problems.append(f"pay_clicked is {r['pay_clicked']!r}")
                     if not r["test_page"]:
                         problems.append("pay page does not say it is a test store")
+                    if r["gift_seen"] != ("gift_page" in cfg["extras"]):
+                        problems.append("gift page seen" if r["gift_seen"] else "gift page not seen")
+                    for name, ticked in r["found"].items():
+                        if not ticked:
+                            problems.append(f"{name} box was not pre-ticked")
+                    pay = payment_text(cfg)
+                    if pay and r["payment_shown"] != pay:
+                        problems.append(f"summary shows payment {r['payment_shown']!r}, expected {pay!r}")
                 status = "FAIL" if problems else "PASS"
                 failures += bool(problems)
-                detail = (f"summary total {r['shown']} vs key {expected} (key sum {ks}), cart total {r['cart_total']}, "
-                          f"pay_clicked={r['pay_clicked']}, test page={r['test_page']}\n      lines: {r['lines']}"
-                          if r else f"key {expected} (key sum {ks})")
+                if r:
+                    found = ", ".join(f"{k}={'ticked' if v else 'unticked'}" for k, v in r["found"].items()) or "none"
+                    detail = (f"summary total {r['shown']} vs key {expected} (key sum {ks}), cart total {r['cart_total']}, "
+                              f"{r['pages']} pages, left as found: {found}, pay_clicked={r['pay_clicked']}, "
+                              f"test page={r['test_page']}\n      lines: {r['lines']}")
+                else:
+                    detail = f"key {expected} (key sum {ks})"
                 print(f"{status} {key['store_id']} {key['name']}: {detail}")
                 results[key["store_id"]] = {"status": status, "at": datetime.now().isoformat(timespec="seconds"),
                                             "expected_final_total": expected, "problems": problems}

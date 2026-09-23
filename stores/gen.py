@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Generate the four practice stores and their answer keys.
+"""Generate the practice stores (L1-L8) and their answer keys.
 
 Usage: python stores/gen.py
-Writes stores/www/l1 .. l4 (the served root) and stores/keys/l1.json .. l4.json
+Writes stores/www/l1 .. l8 (the served root) and stores/keys/l1.json .. l8.json
 (outside the served root, so never reachable over HTTP). Re-running overwrites.
+
+Extras a store can switch on (all off by default): summary_charge, preticked, addon_offer,
+delivery_charge, offer, early_pay, payment_methods (a "Payment method" select whose
+cash-on-delivery option adds a charge that only shows on the summary), gift_page (an extra
+page between cart and options with a pre-ticked add-on) and coupon_box (a pre-filled coupon
+input on the cart that changes nothing). Stores without an extra get exactly the pages and
+script they got before the extra existed.
 """
 import json
 import re
@@ -123,6 +130,122 @@ STORES = [
         "task": "Buy one pair of the black wireless earbuds with express delivery.",
         "task_choice": {"size": None, "delivery": "express"},
     },
+    {
+        "id": "l5", "level": 5, "name": "Spice Route",
+        "storage_key": "spiceroute_trolley",
+        "words": {"cart": "trolley", "add": "Add to trolley", "next": "Go ahead", "pay": "Confirm order"},
+        "colours": {"header": "#c0392b", "header_text": "#fff", "accent": "#a93226", "page": "#fff8f0",
+                    "font": "Tahoma, Geneva, sans-serif"},
+        "layout": "stepper",
+        "product": {"name": "Garam Masala Tin 200 g", "price": 320,
+                    "blurb": "Stone-ground blend of 14 whole spices, roasted in small batches.", "note": None},
+        "sizes": None,
+        "fixed_charges": [{"label": "GST", "amount": 16}],
+        "delivery": {
+            "shown_upfront": True, "placeholder": None, "default": "standard",
+            "options": [
+                {"id": "standard", "text": "Standard ₹30", "line": "Delivery", "amount": 30},
+                {"id": "express", "text": "Express ₹90", "line": "Express delivery", "amount": 90},
+            ],
+        },
+        "extras": {
+            "payment_methods": {
+                "default": "upi", "placeholder": None,
+                "options": [{"id": "upi", "text": "UPI"}, {"id": "card", "text": "Card"},
+                            {"id": "cod", "text": "Cash on delivery"}],
+                "cod_option": "cod", "cod_charge": {"label": "Cash handling", "amount": 40},
+            },
+        },
+        "task": "Buy one 200 g tin of garam masala with standard delivery and pay by cash on delivery.",
+        "task_choice": {"size": None, "delivery": "standard", "payment": "cod"},
+    },
+    {
+        "id": "l6", "level": 6, "name": "Paper Trail",
+        "storage_key": "papertrail_tote",
+        "words": {"cart": "tote", "add": "Add to tote", "next": "Next", "pay": "Confirm and pay"},
+        "colours": {"header": "#3e2723", "header_text": "#fbe9e7", "accent": "#8d6e63", "page": "#fbf7f2",
+                    "font": "Palatino Linotype, Book Antiqua, Palatino, serif"},
+        "layout": "banner",
+        "product": {"name": "A5 Leather Notebook", "price": 899,
+                    "blurb": "Full-grain leather cover, 192 dotted pages, lies flat.", "note": "Free standard delivery"},
+        "sizes": None,
+        "fixed_charges": [],
+        "delivery": {
+            "shown_upfront": False, "placeholder": "Select a delivery speed", "default": None,
+            "options": [
+                {"id": "standard", "text": "Standard (4-6 days) – Free", "line": "Standard delivery", "amount": 0},
+                {"id": "express", "text": "Express (1-2 days) ₹120", "line": "Express delivery", "amount": 120},
+            ],
+        },
+        "extras": {
+            "gift_page": {"heading": "Gift options", "text": "Sending this as a present? Choose what to include.",
+                          "label": "Gift wrap", "amount": 25, "next": "Continue"},
+            "summary_charge": {"label": "Platform fee", "amount": 19},
+        },
+        "task": "Buy one A5 leather notebook with standard delivery.",
+        "task_choice": {"size": None, "delivery": "standard"},
+    },
+    {
+        "id": "l7", "level": 7, "name": "Orchard Lane",
+        "storage_key": "orchardlane_hamper",
+        "words": {"cart": "hamper", "add": "Add to hamper", "next": "Go to checkout", "pay": "Buy now"},
+        "colours": {"header": "#f57c00", "header_text": "#1a1a1a", "accent": "#e65100", "page": "#fffaf3",
+                    "font": "Optima, Segoe UI, sans-serif"},
+        "layout": "split",
+        "product": {"name": "Wild Forest Honey 500 g", "price": 450,
+                    "blurb": "Raw, unfiltered honey from the Western Ghats. Glass jar.", "note": None},
+        "sizes": None,
+        "fixed_charges": [{"label": "GST", "amount": 22}],
+        "delivery": {
+            "shown_upfront": True, "placeholder": None, "default": "standard",
+            "options": [
+                {"id": "standard", "text": "Standard ₹35", "line": "Delivery", "amount": 35},
+                {"id": "express", "text": "Express ₹110", "line": "Express delivery", "amount": 110},
+            ],
+        },
+        "extras": {
+            "coupon_box": {"code": "SAVE10", "button": "Apply", "message": "Coupon applied at payment"},
+            "addon_offer": {"label": "Wooden honey dipper", "amount": 99,
+                            "text": "Add a wooden honey dipper for ₹99?",
+                            "yes": "Add dipper", "no": "Skip"},
+        },
+        "task": "Buy one 500 g jar of wild forest honey with standard delivery.",
+        "task_choice": {"size": None, "delivery": "standard"},
+    },
+    {
+        "id": "l8", "level": 8, "name": "Trail Kit",
+        "storage_key": "trailkit_kit",
+        "words": {"cart": "kit", "add": "Add to kit", "next": "Save and continue", "pay": "Complete purchase"},
+        "colours": {"header": "#004d40", "header_text": "#fff", "accent": "#00695c", "page": "#f1f8f6",
+                    "font": "Gill Sans, Segoe UI, sans-serif"},
+        "layout": "wide",
+        "product": {"name": "Trekking Backpack 40 L", "price": 2350,
+                    "blurb": "Water-resistant 40 litre pack with a padded hip belt and rain cover.",
+                    "note": "Taxes included"},
+        "sizes": None,
+        "fixed_charges": [],
+        "delivery": {
+            "shown_upfront": False, "placeholder": "Pick a delivery option", "default": None,
+            "options": [
+                {"id": "standard", "text": "Standard ₹0", "line": "Standard delivery", "amount": 0},
+                {"id": "express", "text": "Express ₹129", "line": "Express delivery", "amount": 129},
+            ],
+        },
+        "extras": {
+            "preticked": {"label": "Damage cover", "amount": 59},
+            "delivery_charge": {"label": "Packaging charge", "amount": 29},
+            "offer": {"label": "Monsoon deal: ₹150 off", "amount": -60, "claimed": -150},
+            "early_pay": {"label": "Pay now", "text": "Only 2 left in stock. Pay within 5 minutes to keep your price."},
+            "payment_methods": {
+                "default": None, "placeholder": "Choose how to pay",
+                "options": [{"id": "upi", "text": "UPI"}, {"id": "card", "text": "Debit or credit card"},
+                            {"id": "cod", "text": "Cash on delivery"}],
+                "cod_option": "cod", "cod_charge": {"label": "Cash on delivery charge", "amount": 49},
+            },
+        },
+        "task": "Buy one 40 L trekking backpack with express delivery and pay by cash on delivery.",
+        "task_choice": {"size": None, "delivery": "express", "payment": "cod"},
+    },
 ]
 
 FORBIDDEN_WORDS = ["trap", "hidden", "sneak", "drip", "fee-injection", "inject", "dark", "upsell",
@@ -168,25 +291,50 @@ def order_box(heading):
 </aside>"""
 
 
+def flow_steps(s):
+    steps = [("cart", "Your " + s["words"]["cart"])]
+    if "gift_page" in s["extras"]:
+        steps.append(("gift", "Gift"))
+    return steps + [("options", "Delivery"), ("summary", "Review"), ("pay", "Done")]
+
+
+def nav_items(s, active):
+    return "".join(f'<li class="{"active" if k == active else ""}">{label}</li>' for k, label in flow_steps(s))
+
+
 def side_nav(s, active):
-    steps = [("cart", "Your " + s["words"]["cart"]), ("options", "Delivery"), ("summary", "Review"), ("pay", "Done")]
-    items = "".join(f'<li class="{"active" if k == active else ""}">{label}</li>' for k, label in steps)
-    return f'<nav class="side-nav"><ol>{items}</ol></nav>'
+    return f'<nav class="side-nav"><ol>{nav_items(s, active)}</ol></nav>'
+
+
+def step_nav(s, active):
+    return f'<nav class="step-nav"><ol>{nav_items(s, active)}</ol></nav>'
+
+
+def with_nav(s, page_name, body):
+    """Sidebar layout wraps the body next to a vertical step list; stepper puts a horizontal one on top."""
+    if s["layout"] == "sidebar":
+        return side_nav(s, page_name) + "\n<div class=\"content-wrap\">\n" + body + "\n</div>"
+    if s["layout"] == "stepper":
+        return step_nav(s, page_name) + "\n" + body
+    return body
 
 
 def flow_page(s, page_name, title, h1, parts, box_heading="Order summary"):
     """parts is a list of HTML strings; the string "ORDER" marks where the order box goes
-    in single/sidebar layouts. Column and grid layouts pull it out into a second column."""
+    in single/sidebar/stepper layouts. Columns, grid and wide pull it out after the content,
+    banner puts it before the heading, split puts it between the heading and the content."""
     box = order_box(box_heading)
-    if s["layout"] in ("columns", "grid"):
-        content = "".join(p for p in parts if p != "ORDER")
-        body = f"<h1>{h1}</h1>\n<section class=\"content\">\n{content}\n</section>\n{box}"
+    pulled = "".join(p for p in parts if p != "ORDER")
+    if s["layout"] in ("columns", "grid", "wide"):
+        body = f"<h1>{h1}</h1>\n<section class=\"content\">\n{pulled}\n</section>\n{box}"
+    elif s["layout"] == "banner":
+        body = f"{box}\n<h1>{h1}</h1>\n<section class=\"content\">\n{pulled}\n</section>"
+    elif s["layout"] == "split":
+        body = f"<h1>{h1}</h1>\n{box}\n<section class=\"content\">\n{pulled}\n</section>"
     else:
         content = "".join(box if p == "ORDER" else p for p in parts)
         body = f"<h1>{h1}</h1>\n<section class=\"content\">\n{content}\n</section>"
-    if s["layout"] == "sidebar":
-        body = side_nav(s, page_name) + "\n<div class=\"content-wrap\">\n" + body + "\n</div>"
-    return page(s, page_name, title, body)
+    return page(s, page_name, title, with_nav(s, page_name, body))
 
 
 def product_page(s):
@@ -222,16 +370,28 @@ def product_page(s):
   <button id="add-button" type="button">{s['words']['add']}</button>
   </div>
 </section>"""
-    if s["layout"] == "sidebar":
-        body = side_nav(s, "index") + "\n<div class=\"content-wrap\">\n" + body + "\n</div>"
-    return page(s, "index", f"{p['name']} – {s['name']}", body)
+    return page(s, "index", f"{p['name']} – {s['name']}", with_nav(s, "index", body))
 
 
 def cart_page(s):
     w = s["words"]
-    parts = ["ORDER", f'<p><button id="next-button" type="button">{w["next"]}</button></p>']
+    parts = ["ORDER"]
+    if "coupon_box" in s["extras"]:
+        cb = s["extras"]["coupon_box"]
+        parts.append(f'<p class="coupon-row"><label>Coupon code <input type="text" id="coupon-input" value="{cb["code"]}"></label> '
+                     f'<button id="coupon-button" type="button">{cb["button"]}</button> <span id="coupon-note"></span></p>')
+    parts.append(f'<p><button id="next-button" type="button">{w["next"]}</button></p>')
     return flow_page(s, "cart", f"Your {w['cart']} – {s['name']}", f"Your {w['cart']}", parts,
                      box_heading=f"Items in your {w['cart']}")
+
+
+def gift_page(s):
+    g = s["extras"]["gift_page"]
+    parts = [f'<p>{g["text"]}</p>',
+             f'<p class="addon-row"><label><input type="checkbox" id="gift-check" checked> {g["label"]} {money(g["amount"])}</label></p>',
+             "ORDER",
+             f'<p><button id="next-button" type="button">{g["next"]}</button></p>']
+    return flow_page(s, "gift", f"{g['heading']} – {s['name']}", g["heading"], parts)
 
 
 def options_page(s):
@@ -247,6 +407,15 @@ def options_page(s):
         pt = s["extras"]["preticked"]
         form += (f'<p class="addon-row"><label><input type="checkbox" id="protection-check" checked> '
                  f'{pt["label"]} {money(pt["amount"])}</label></p>')
+    if "payment_methods" in s["extras"]:
+        pm = s["extras"]["payment_methods"]
+        popts = ""
+        if pm["placeholder"]:
+            popts += f'<option value="">{pm["placeholder"]}</option>'
+        for o in pm["options"]:
+            sel = " selected" if o["id"] == pm["default"] else ""
+            popts += f'<option value="{o["id"]}"{sel}>{o["text"]}</option>'
+        form += f'<p><label>Payment method <select id="payment-select">{popts}</select></label></p>'
     address = f'<div class="address"><strong>Deliver to</strong><br>{ADDRESS}<br>{CONTACT}</div>'
     parts = [form, address, "ORDER", '<p id="notice" class="notice"></p>',
              f'<p><button id="next-button" type="button">{s["words"]["next"]}</button></p>']
@@ -260,6 +429,8 @@ def summary_page(s):
         parts.append(f'<div class="offer-banner"><p>{ep["text"]}</p>'
                      f'<button id="pay-now-button" type="button" data-pay>{ep["label"]}</button></div>')
     parts.append(f'<div class="address"><strong>Deliver to</strong><br>{ADDRESS}<br>{CONTACT}</div>')
+    if "payment_methods" in s["extras"]:
+        parts.append('<div class="address"><strong>Payment</strong><br><span id="payment-line"></span></div>')
     parts.append("ORDER")
     parts.append(f'<p><button id="pay-button" type="button" data-pay>{s["words"]["pay"]}</button></p>')
     return flow_page(s, "summary", f"Review your order – {s['name']}", "Review your order", parts)
@@ -272,13 +443,13 @@ def pay_page(s):
   <p>Order total <span id="order-total"></span></p>
   <p><a href="index.html">Back to the shop</a></p>
 </section>"""
-    if s["layout"] == "sidebar":
-        body = side_nav(s, "pay") + "\n<div class=\"content-wrap\">\n" + body + "\n</div>"
-    return page(s, "pay", f"Order placed – {s['name']}", body)
+    return page(s, "pay", f"Order placed – {s['name']}", with_nav(s, "pay", body))
 
 
 # ---------- script and styles ----------
 
+# @@NAME@@ marks a spot where an opted-in extra inserts script; every marker is replaced,
+# with "" for stores that do not use it, so their app.js is unchanged.
 JS_BODY = r"""
 var KEY = STORE.storageKey;
 
@@ -303,13 +474,13 @@ function orderLines(s, pageName) {
   out.push({label: STORE.product.name + (s.size ? " (size " + s.size + ")" : ""), amount: STORE.product.price});
   if (STORE.addonOffer && s.addon) out.push({label: STORE.addonOffer.label, amount: STORE.addonOffer.amount});
   STORE.fixedCharges.forEach(function (c) { out.push(c); });
-  if (STORE.protection && s.protection && pageName !== "cart") out.push(STORE.protection);
+  if (STORE.protection && s.protection && pageName !== "cart") out.push(STORE.protection);@@GIFT_LINE@@
   var d = deliveryChoice(s);
   if (d) out.push({label: d.line, amount: d.amount});
   if (d && STORE.deliveryCharge) out.push(STORE.deliveryCharge);
   if (pageName === "summary" || pageName === "pay") {
     if (STORE.summaryCharge) out.push(STORE.summaryCharge);
-    if (STORE.offer) out.push(STORE.offer);
+    if (STORE.offer) out.push(STORE.offer);@@SUMMARY_LINES@@
   }
   return out;
 }
@@ -340,7 +511,7 @@ function initProduct() {
     var size = sizeSel ? sizeSel.value : null;
     if (sizeSel && !size) { notice("Please choose a size first."); return; }
     save({qty: 1, size: size || null, addon: false, offerAnswered: false,
-          protection: !!STORE.protection, delivery: null});
+          protection: !!STORE.protection, delivery: null@@STATE_EXTRA@@});
     location.href = "cart.html";
   });
 }
@@ -360,9 +531,9 @@ function showOffer(s) {
 function initCart() {
   renderOrder("cart");
   var s = load();
-  document.getElementById("next-button").addEventListener("click", function () { location.href = "options.html"; });
-  if (s && STORE.addonOffer && !s.offerAnswered) showOffer(s);
-}
+  document.getElementById("next-button").addEventListener("click", function () { location.href = "@@CART_NEXT@@"; });
+  if (s && STORE.addonOffer && !s.offerAnswered) showOffer(s);@@CART_EXTRA@@
+}@@GIFT_INIT@@
 
 function initOptions() {
   var s = load();
@@ -375,16 +546,16 @@ function initOptions() {
   if (chk) {
     chk.checked = !!s.protection;
     chk.addEventListener("change", function () { s.protection = chk.checked; save(s); renderOrder("options"); });
-  }
+  }@@OPTIONS_EXTRA@@
   renderOrder("options");
   document.getElementById("next-button").addEventListener("click", function () {
-    if (!s.delivery) { notice("Please choose a delivery option."); return; }
+    if (!s.delivery) { notice("Please choose a delivery option."); return; }@@OPTIONS_NEXT_CHECK@@
     location.href = "summary.html";
   });
 }
 
 function initSummary() {
-  var t = renderOrder("summary");
+  var t = renderOrder("summary");@@SUMMARY_EXTRA@@
   var buttons = document.querySelectorAll("[data-pay]");
   Array.prototype.forEach.call(buttons, function (b) {
     b.textContent = b.textContent.replace("{total}", money(t));
@@ -397,11 +568,75 @@ function initSummary() {
 
 var PAGE = document.body.getAttribute("data-page");
 if (PAGE === "index") initProduct();
-else if (PAGE === "cart") initCart();
+else if (PAGE === "cart") initCart();@@GIFT_DISPATCH@@
 else if (PAGE === "options") initOptions();
 else if (PAGE === "summary") initSummary();
 else if (PAGE === "pay") renderOrder("pay");
 """
+
+
+JS_GIFT_LINE = """
+  if (STORE.gift && s.gift && pageName !== "cart") out.push(STORE.gift);"""
+
+JS_GIFT_INIT = """
+
+function initGift() {
+  var s = load();
+  if (!s) { renderOrder("gift"); return; }
+  var chk = document.getElementById("gift-check");
+  chk.checked = !!s.gift;
+  chk.addEventListener("change", function () { s.gift = chk.checked; save(s); renderOrder("gift"); });
+  renderOrder("gift");
+  document.getElementById("next-button").addEventListener("click", function () { location.href = "options.html"; });
+}"""
+
+JS_GIFT_DISPATCH = """
+else if (PAGE === "gift") initGift();"""
+
+JS_COUPON = """
+  var coupon = document.getElementById("coupon-button");
+  if (coupon) coupon.addEventListener("click", function () {
+    document.getElementById("coupon-note").textContent = STORE.coupon.message;
+  });"""
+
+JS_PAYMENT_OPTIONS = """
+  var paySel = document.getElementById("payment-select");
+  if (paySel) {
+    if (!s.payment && STORE.payment.default) { s.payment = STORE.payment.default; save(s); }
+    paySel.value = s.payment || "";
+    paySel.addEventListener("change", function () { s.payment = paySel.value || null; save(s); renderOrder("options"); });
+  }"""
+
+JS_PAYMENT_NEXT_CHECK = """
+    if (STORE.payment && !s.payment) { notice("Please choose a payment method."); return; }"""
+
+JS_PAYMENT_LINES = """
+    if (STORE.payment && STORE.payment.codCharge && s.payment === STORE.payment.codOption) out.push(STORE.payment.codCharge);"""
+
+JS_PAYMENT_SUMMARY = """
+  var payLine = document.getElementById("payment-line");
+  if (payLine) {
+    var s = load(), chosen = null;
+    if (s) STORE.payment.options.forEach(function (o) { if (o.id === s.payment) chosen = o; });
+    payLine.textContent = chosen ? chosen.text : "Not chosen";
+  }"""
+
+
+def js_snippets(s):
+    e = s["extras"]
+    gift, pay, coupon = "gift_page" in e, "payment_methods" in e, "coupon_box" in e
+    return {
+        "@@GIFT_LINE@@": JS_GIFT_LINE if gift else "",
+        "@@GIFT_INIT@@": JS_GIFT_INIT if gift else "",
+        "@@GIFT_DISPATCH@@": JS_GIFT_DISPATCH if gift else "",
+        "@@CART_NEXT@@": "gift.html" if gift else "options.html",
+        "@@CART_EXTRA@@": JS_COUPON if coupon else "",
+        "@@STATE_EXTRA@@": (", gift: !!STORE.gift" if gift else "") + (", payment: null" if pay else ""),
+        "@@OPTIONS_EXTRA@@": JS_PAYMENT_OPTIONS if pay else "",
+        "@@OPTIONS_NEXT_CHECK@@": JS_PAYMENT_NEXT_CHECK if pay else "",
+        "@@SUMMARY_LINES@@": JS_PAYMENT_LINES if pay else "",
+        "@@SUMMARY_EXTRA@@": JS_PAYMENT_SUMMARY if pay else "",
+    }
 
 
 def app_js(s):
@@ -418,7 +653,20 @@ def app_js(s):
         "summaryCharge": e.get("summary_charge"),
         "offer": ({"label": e["offer"]["label"], "amount": e["offer"]["amount"]} if "offer" in e else None),
     }
-    return "var STORE = " + json.dumps(cfg, ensure_ascii=False, indent=2) + ";\n" + JS_BODY
+    if "gift_page" in e:
+        cfg["gift"] = {"label": e["gift_page"]["label"], "amount": e["gift_page"]["amount"]}
+    if "payment_methods" in e:
+        pm = e["payment_methods"]
+        cfg["payment"] = {"default": pm["default"], "options": pm["options"],
+                          "codOption": pm.get("cod_option"), "codCharge": pm.get("cod_charge")}
+    if "coupon_box" in e:
+        cfg["coupon"] = {"message": e["coupon_box"]["message"]}
+    body = JS_BODY
+    for marker, snippet in js_snippets(s).items():
+        body = body.replace(marker, snippet)
+    if "@@" in body:
+        raise SystemExit("unfilled script marker in " + s["id"])
+    return "var STORE = " + json.dumps(cfg, ensure_ascii=False, indent=2) + ";\n" + body
 
 
 CSS = Template("""
@@ -460,6 +708,22 @@ LAYOUT_CSS = {
 .side-nav ol { margin: 0; padding-left: 20px; }
 .side-nav li { padding: 6px 0; }
 .side-nav li.active { font-weight: bold; }""",
+    "stepper": """.shell { max-width: 700px; }
+.step-nav ol { display: flex; gap: 8px; list-style: none; margin: 0 0 16px; padding: 0; }
+.step-nav li { flex: 1; text-align: center; padding: 8px 4px; background: #eee; border-bottom: 3px solid #ccc; font-size: 14px; }
+.step-nav li.active { border-bottom-color: #333; font-weight: bold; }""",
+    "banner": """.shell { max-width: 760px; }
+.order-box { border-width: 2px; margin-top: 0; }
+.content { background: #fff; border: 1px solid #ddd; padding: 16px; }""",
+    "split": """.shell { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start; }
+.shell > h1 { grid-column: 1 / -1; }
+.order-box { margin: 0; }
+.product { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }""",
+    "wide": """.shell { max-width: 1100px; }
+.content { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.content > * { flex: 1 1 320px; margin: 0; }
+.order-box { max-width: 480px; }
+.product { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }""",
 }
 
 
@@ -481,12 +745,20 @@ def build_key(s):
         upfront.append({"label": "Delivery", "amount": chosen_opt["amount"]})
     else:
         chosen.append({"label": chosen_opt["line"], "amount": chosen_opt["amount"]})
+    pm = e.get("payment_methods")
+    pay_choice = s["task_choice"].get("payment")
+    if pm and pay_choice:
+        pay_opt = next(o for o in pm["options"] if o["id"] == pay_choice)
+        chosen.append({"label": pay_opt["text"], "amount": 0})
     traps = []
     if "summary_charge" in e:
         x = e["summary_charge"]
         traps.append({"type": "drip_fee", "label": x["label"], "amount": x["amount"], "scored": True, "pattern": "drip pricing"})
     if "preticked" in e:
         x = e["preticked"]
+        traps.append({"type": "pre_ticked_addon", "label": x["label"], "amount": x["amount"], "scored": True, "pattern": "basket sneaking"})
+    if "gift_page" in e:
+        x = e["gift_page"]
         traps.append({"type": "pre_ticked_addon", "label": x["label"], "amount": x["amount"], "scored": True, "pattern": "basket sneaking"})
     if "addon_offer" in e:
         x = e["addon_offer"]
@@ -497,6 +769,9 @@ def build_key(s):
     if "offer" in e:
         x = e["offer"]
         traps.append({"type": "misleading_discount", "label": x["label"], "amount": x["amount"], "claimed": x["claimed"], "scored": True, "pattern": None})
+    if pm and pm.get("cod_charge") and pay_choice == pm.get("cod_option"):
+        x = pm["cod_charge"]
+        traps.append({"type": "cod_surcharge", "label": x["label"], "amount": x["amount"], "scored": True, "pattern": "drip pricing"})
     if "early_pay" in e:
         x = e["early_pay"]
         traps.append({"type": "early_pay_button", "label": x["label"], "amount": 0, "scored": False, "pattern": "false urgency"})
@@ -534,6 +809,8 @@ def main():
         out.mkdir(parents=True)
         (out / "index.html").write_text(product_page(s), encoding="utf-8")
         (out / "cart.html").write_text(cart_page(s), encoding="utf-8")
+        if "gift_page" in s["extras"]:
+            (out / "gift.html").write_text(gift_page(s), encoding="utf-8")
         (out / "options.html").write_text(options_page(s), encoding="utf-8")
         (out / "summary.html").write_text(summary_page(s), encoding="utf-8")
         (out / "pay.html").write_text(pay_page(s), encoding="utf-8")

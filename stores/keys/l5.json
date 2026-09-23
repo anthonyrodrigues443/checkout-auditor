@@ -1,0 +1,35 @@
+{
+  "store_id": "l5",
+  "level": 5,
+  "name": "Spice Route",
+  "url": "http://localhost:8000/l5/",
+  "task": "Buy one 200 g tin of garam masala with standard delivery and pay by cash on delivery.",
+  "first_price": 320,
+  "upfront_charges": [
+    {
+      "label": "GST",
+      "amount": 16
+    },
+    {
+      "label": "Delivery",
+      "amount": 30
+    }
+  ],
+  "chosen_options": [
+    {
+      "label": "Cash on delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "cod_surcharge",
+      "label": "Cash handling",
+      "amount": 40,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 406,
+  "stop_point": "summary"
+}

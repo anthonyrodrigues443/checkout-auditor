@@ -1,0 +1,30 @@
+{
+  "store_id": "l7",
+  "level": 7,
+  "name": "Orchard Lane",
+  "url": "http://localhost:8000/l7/",
+  "task": "Buy one 500 g jar of wild forest honey with standard delivery.",
+  "first_price": 450,
+  "upfront_charges": [
+    {
+      "label": "GST",
+      "amount": 22
+    },
+    {
+      "label": "Delivery",
+      "amount": 35
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "upsell_popup",
+      "label": "Wooden honey dipper",
+      "amount": 99,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 507,
+  "stop_point": "summary"
+}
