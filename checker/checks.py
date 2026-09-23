@@ -9,7 +9,7 @@ import re
 
 TOLERANCE = 0.01
 
-SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount", "price_change", "unexplained_gap", "vanished_discount")
+SCORED_CHECKS = ("basket_sneaking", "drip_pricing", "misleading_discount", "price_change", "unexplained_gap", "vanished_discount", "subscription_trap")
 
 CCPA_PATTERNS = {
     "basket_sneaking": "basket sneaking",
@@ -44,6 +44,8 @@ _AGGREGATE_RE = re.compile(r"\b(total|payable|amount due|to pay|you pay|grand)\b
 CCPA_PATTERNS.setdefault("price_change", "bait and switch")
 CCPA_PATTERNS.setdefault("unexplained_gap", None)
 CCPA_PATTERNS.setdefault("vanished_discount", "bait and switch")
+CCPA_PATTERNS.setdefault("subscription_trap", "subscription trap")
+_SUBSCRIPTION_RE = re.compile(r"\b(month|monthly|year|yearly|annual|trial|renew|renews|subscription|subscribe|membership|auto)\b")
 
 _CURRENCY_RE = re.compile(r"₹|\brs\.?|\binr\b")
 _DIGITS_RE = re.compile(r"[\d,]")
@@ -298,6 +300,24 @@ def check_vanished_discounts(final, cart) -> list[dict]:
     return findings
 
 
+def check_subscription_traps(final, first) -> list[dict]:
+    """A pre-selected ₹0 line whose label promises a recurring charge later (free trial that renews)."""
+    findings = []
+    for pair in match_lines(_items(final), _items(first or {})):
+        item = pair["final"]
+        amount = _num(item.get("amount"))
+        if amount is None or abs(amount) > TOLERANCE or item.get("chosen_by_me") or pair["first"] is not None:
+            continue
+        n = normalise_label(item.get("label"))
+        if not _SUBSCRIPTION_RE.search(n):
+            continue
+        findings.append(_finding("subscription_trap", item, final,
+                                 evidence=(f"'{item.get('label')}' costs ₹0 today, was not chosen and promises a recurring "
+                                           f"charge later; pre_selected {'true' if item.get('pre_selected') else 'false'}"),
+                                 pre_selected=bool(item.get("pre_selected"))))
+    return findings
+
+
 def check_misleading_discounts(final, first=None) -> list[dict]:
     """Negative final lines whose label states a bigger number than was applied."""
     findings = []
@@ -428,6 +448,7 @@ def check_run(run: dict) -> dict:
         findings += check_basket_sneaking(final, first, run.get("actions"))
         findings += check_drip_pricing(final, first)
         findings += check_price_changes(final, first)
+        findings += check_subscription_traps(final, first)
         checked["basket_sneaking"] = checked["drip_pricing"] = True
     elif final:
         notes.append("first_price checkpoint missing: basket sneaking and drip pricing could not be checked")

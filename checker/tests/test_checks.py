@@ -396,3 +396,22 @@ def test_discount_shown_in_cart_but_gone_at_final_is_flagged():
     kinds = [(f["check"], f["amount"], f["pattern"]) for f in out["findings"]]
     assert ("vanished_discount", 100.0, "bait and switch") in kinds
     assert out["gap"]["unexplained"] == 0
+
+
+def test_preticked_free_trial_that_renews_is_a_subscription_trap():
+    from checker.checks import check_run
+    from checker.score import score_run
+    run = {"run_id": "t", "store_id": "lx", "mode": "test", "model": "m", "completed": True, "attempted_payment": False,
+           "checkpoints": {"first_price": {"line_items": [_li("Steel Bottle", 799, chosen=True)], "total": 799},
+                           "cart": None,
+                           "final": {"line_items": [_li("Steel Bottle", 799, chosen=True),
+                                                    _li("Plus membership trial (₹0 today, ₹199/month after 30 days)", 0, pre=True)], "total": 799}},
+           "actions": []}
+    out = check_run(run)
+    kinds = [(f["check"], f["amount"], f["pattern"]) for f in out["findings"]]
+    assert ("subscription_trap", 0.0, "subscription trap") in kinds
+    key = {"store_id": "lx", "level": 15, "task": "t", "first_price": 799, "upfront_charges": [], "chosen_options": [],
+           "traps": [{"type": "subscription_trap", "label": "Plus membership trial", "amount": 0, "scored": True,
+                      "pattern": "subscription trap", "in_total": False}], "expected_final_total": 799}
+    s = score_run(run, key)
+    assert s["caught"] == 1 and s["false_alarms"] == 0 and s["level_cleared"]
