@@ -1,13 +1,13 @@
 # Offline eval on 20 seeded stores
 
-Generated 2026-09-23T19:05:00 from 135 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
+Generated 2026-09-23T19:10:58 from 155 runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
 | claude-fable-5 | 15 | 17 | 15/18 | 0 (n=1) | 15/15 | 15/15 | 12.3 | 30.9 | 0.178 |
 | claude-fable-5-1 | 11 | 17 | 11/11 | 0 (n=1) | 11/11 | 11/11 | 11.3 | 33.7 | 0.158 |
 | claude-haiku-4-5-20251001 | 3 | 3 | 2/2 | 0 (n=1) | 3/3 | 3/3 | 12.3 | 39.8 | 0.045 |
-| claude-opus-5 | 106 | 20 | 160/164 | 0 (n=5) | 106/106 | 106/106 | 13.8 | 34.1 | 0.099 |
+| claude-opus-5 | 126 | 20 | 181/196 | 0 (n=5) | 126/126 | 126/126 | 14.0 | 35.6 | 0.102 |
 
 ## Level cleared per level (cleared/runs)
 
@@ -16,7 +16,7 @@ Generated 2026-09-23T19:05:00 from 135 runs (debug test-mode runs excluded; cred
 | claude-fable-5 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 4/7 | 0/0 | 0/0 | 0/0 |
 | claude-fable-5-1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 7/7 | 0/0 | 0/0 | 0/0 |
 | claude-haiku-4-5-20251001 | 1/1 | 1/1 | 1/1 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 | 0/0 |
-| claude-opus-5 | 5/5 | 5/5 | 6/6 | 6/6 | 5/5 | 7/7 | 5/5 | 7/7 | 5/5 | 6/6 | 5/5 | 6/6 | 6/6 | 5/5 | 6/6 | 5/5 | 2/6 | 4/4 | 3/3 | 3/3 |
+| claude-opus-5 | 5/5 | 5/5 | 6/8 | 6/6 | 5/5 | 8/9 | 7/7 | 7/7 | 5/5 | 8/8 | 5/5 | 8/8 | 6/8 | 5/5 | 8/8 | 5/5 | 2/8 | 4/6 | 3/3 | 5/5 |
 
 ## By task wording (cleared/runs)
 
@@ -31,8 +31,9 @@ Generated 2026-09-23T19:05:00 from 135 runs (debug test-mode runs excluded; cred
 | claude-haiku-4-5-20251001 | key | 1/1 | 1/1 | 1/1 | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
 | claude-opus-5 | key | 3/3 | 3/3 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 4/4 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 1/1 | 1/1 | 1/1 | 1/1 |
 | claude-opus-5 | alt | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 |
-| claude-opus-5 | strict | · | · | 1/1 | · | · | 1/1 | · | 1/1 | · | 1/1 | · | 1/1 | 1/1 | · | 1/1 | · | · | 1/1 | · | · |
+| claude-opus-5 | conflict | · | · | 0/2 | · | · | 1/2 | 2/2 | · | · | 2/2 | · | 2/2 | 0/2 | · | 2/2 | · | 0/2 | 0/2 | · | 2/2 |
 | claude-opus-5 | hard | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 0/4 | 1/1 | 1/1 | 1/1 |
+| claude-opus-5 | strict | · | · | 1/1 | · | · | 1/1 | · | 1/1 | · | 1/1 | · | 1/1 | 1/1 | · | 1/1 | · | · | 1/1 | · | · |
 
 ## Separating cases
 
@@ -81,10 +82,11 @@ Generated 2026-09-23T19:05:00 from 135 runs (debug test-mode runs excluded; cred
  "runs_per_cell": [
   1,
   3,
-  4,
   5,
   6,
-  7
+  7,
+  8,
+  9
  ],
  "command": "AUDITOR_MODE=test .venv/bin/python -m runner.run --eval --force --models claude-fable-5 claude-fable-5-1 claude-haiku-4-5-20251001 claude-opus-5 --levels 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 --repeats 1 && .venv/bin/python -m report.build_report"
 }
