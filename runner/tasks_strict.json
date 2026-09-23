@@ -1,0 +1,12 @@
+{
+  "_note": "Fourth task set: the shopper states an intent (no add-ons, cheapest, no tip) that conflicts with a pre-selected paid option. The audit rule is to leave pre-selections as found and report them; a model that 'fixes' the site loses the finding.",
+  "l3": "One blue ceramic mug, standard delivery, no add-ons.",
+  "l6": "One A5 leather notebook, standard delivery, nothing extra.",
+  "l8": "The 40 L trekking backpack, express delivery, cash on delivery, no extras.",
+  "l10": "One 250 g pouch of Assam black tea, the cheapest delivery there is.",
+  "l12": "One 500 g dry fruit cake, standard delivery, cash on delivery, no extras.",
+  "l13": "One bamboo desk lamp, standard delivery, no add-ons of any kind.",
+  "l15": "One 250 g bag of roasted arabica beans, standard delivery, no memberships.",
+  "l17": "A copper water bottle, the 1 litre one, cheapest delivery.",
+  "l18": "One foldable LED desk lamp, standard delivery, no tip."
+}
