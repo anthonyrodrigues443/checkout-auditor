@@ -78,7 +78,13 @@ This matters because the audit rule is to leave whatever the site pre-selected e
 
 ## Eval
 
-See [report/eval.md](report/eval.md). It is an offline eval on seeded stores, not a benchmark. The run ladder is every model on every store once, then repeats at the level where models separate. Runs go into the table by the ladder, never by their outcome, and the reproducibility block lists the exact model IDs, shared settings, prompt hash and the one command that regenerates it.
+[report/eval.md](report/eval.md) is the committed table. [report/index.html](report/index.html) is the same comparison with the per-run audit reports, the ground-truth-vs-found panel and every step's screenshot.
+
+It is an offline eval on seeded stores, not a benchmark. The ladder is fixed before the runs and decides what goes in: every model on every store once, then repeats only where the models separate, then another task wording on the same stores. Runs enter the table by the ladder, never by their outcome, and the reproducibility block lists the exact model IDs, the shared settings (step cap 25, per-run cap $3), the prompt hash and the one command that regenerates everything.
+
+The **Divergence suite** is a lens, not the score. It is picked after the fact: a cell is one store and one task wording where at least two models ran, at least one cleared it and at least one failed it. By construction those are the cells that split the models, so no model can score 100% there and the suite says nothing about the stores everyone gets right. In the eval generated at 2026-09-23T19:26:04 from 351 runs, there are 13 such cells, and on exactly those cells claude-fable-5-1 is 23/27, claude-fable-5 is 18/27, claude-opus-5 is 6/28, and claude-haiku-4-5-20251001 is 0/0 because it only ran three stores. Ten of the thirteen cells are `conflict` wordings. The full comparison table above it is the eval; quote the suite only with the caveat attached.
+
+Numbers move as more runs land, so read them out of `report/eval.md` at the timestamp in its header rather than from here.
 
 ## Honest limits
 
@@ -87,6 +93,8 @@ See [report/eval.md](report/eval.md). It is an offline eval on seeded stores, no
 - A single run per cell is one observation, not a rate. Repeats show as k/n and only mean something where n > 1.
 - Findings depend on what the model reports at each checkpoint. Python does the sums, the model does the reading.
 - Test-mode runs are excluded from the comparison.
+- The eval covers 36 of the 40 stores. The four newest have keys and pass the validator, but no scored runs in the table yet.
+- The Divergence suite is selected after the fact, from cells where the models already disagreed. It is a lens on where they differ, not a score.
 - Not tested: real sites, coupons, multi-item carts, mobile layouts.
 
 ## Layout
@@ -97,7 +105,7 @@ checkout-auditor/
   checker/   checks.py (basket sneaking, drip pricing, misleading discount, price change, vanished discount, unexplained gap), score.py (score vs answer key), tests/
   runner/    run.py (models x levels x repeats, parallel, spend cap)
   report/    build_report.py -> index.html, eval.md, audit/<submission>.html
-  stores/    gen.py, validate.py, www/ (served l1..l4), keys/ (answer keys, not served)
+  stores/    gen.py .. gen9.py (stores from config), validate.py, www/ (served l1..l40), keys/ (answer keys + validation.json, not served)
   runs/      one JSON per run + screenshots/ (gitignored)
   web/       app.py (JSON API + reference pages), ui/ (the two pages people actually use)
 ```
@@ -109,13 +117,13 @@ Two static pages in `web/ui/`, no build step and no framework, mounted by `web.a
 | Page | URL | What it does |
 |---|---|---|
 | Audit | `/ui/` | One store URL with any number of task sentences under it, `+ Add another store` for more, plus model tick-boxes. The URL is asked for once per store and multiplied across its tasks into the flat `rows` the API wants. **Run audit** POSTs `/api/run`, then polls `/api/submission/{id}` every 3 s and renders one section per task: first price → final total, the charges the shopper never chose with their pattern names, and the verdict line. `show browser` is per task, so one task can run headed while the rest stay headless. **Load seeded stores** fills it from `/api/stores`. |
-| Eval | `/ui/eval.html` | Pre-loads the runs from the last audit started on the Audit page, pairs each with its store's answer key, and scores them via `/api/score` — so the demo is one press of **Score**, or none at all. Each panel shows seeded vs found and `expected − reported` for the first price and the final total. Below it, the model comparison table from `/api/eval`. |
+| Eval | `/ui/eval.html` | Pre-loads the runs from the last audit started on the Audit page, pairs each with its store's answer key, and scores them via `/api/score`, so the demo is one press of **Score**, or none at all. Each panel shows seeded vs found and `expected − reported` for the first price and the final total. Below it, the model comparison table from `/api/eval`. |
 
 The pages are plain HTML/CSS/JS on purpose: nothing on the demo path needs a bundler or the network. They call the API on their own origin by default; `?api=http://host:port` points them at a backend somewhere else and is remembered.
 
 ### Developing the UI without the backend
 
-`python web/ui/mock_api.py` serves the same endpoints and the pages on the same port, with runs synthesised from the real answer keys. It needs nothing but the standard library — no SDK, no Playwright, no API key — so the front end can be worked on while runs are happening elsewhere. Every page shows a banner when it is talking to the mock. It is a development aid only; `web/app.py` never imports it.
+`python web/ui/mock_api.py` serves the same endpoints and the pages on the same port, with runs synthesised from the real answer keys. It needs nothing but the standard library (no SDK, no Playwright, no API key), so the front end can be worked on while runs are happening elsewhere. Every page shows a banner when it is talking to the mock. It is a development aid only; `web/app.py` never imports it.
 
 ## Backend API (for the UI)
 
