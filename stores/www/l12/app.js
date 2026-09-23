@@ -41,7 +41,8 @@ var STORE = {
     "hide": "Hide price details",
     "charge": {
       "label": "Service fee",
-      "amount": 39
+      "amount": 39,
+      "inDetails": true
     }
   },
   "priceUpdate": null,
@@ -129,6 +130,14 @@ function renderOrder(pageName) {
     box.innerHTML = lines.map(function (l) {
       return '<div class="line"><span>' + l.label + "</span><span>" + money(l.amount) + "</span></div>";
     }).join("");
+  }
+  var panelBox = document.getElementById("details-lines");
+  if (box && panelBox) {
+    var lineHtml = function (l) {
+      return '<div class="line"><span>' + l.label + "</span><span>" + money(l.amount) + "</span></div>";
+    };
+    box.innerHTML = lines.filter(function (l) { return !l.inDetails; }).map(lineHtml).join("");
+    panelBox.innerHTML = lines.filter(function (l) { return l.inDetails; }).map(lineHtml).join("");
   }
   var t = lines.reduce(function (a, l) { return a + l.amount; }, 0);
   if (tot) tot.textContent = money(t);

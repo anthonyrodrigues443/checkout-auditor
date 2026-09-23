@@ -1,0 +1,26 @@
+{
+  "store_id": "l30",
+  "level": 30,
+  "name": "Minute Mart",
+  "url": "http://localhost:8000/l30/",
+  "task": "Buy one steel analog wristwatch with standard delivery.",
+  "first_price": 3200,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 60
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Basic cover",
+      "amount": 49,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 3309,
+  "stop_point": "summary"
+}

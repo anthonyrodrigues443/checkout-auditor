@@ -1,0 +1,26 @@
+{
+  "store_id": "l25",
+  "level": 25,
+  "name": "Stitch Yard",
+  "url": "http://localhost:8000/l25/",
+  "task": "Buy one crew neck T-shirt in blue, size M, with standard delivery.",
+  "first_price": 689,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 45
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Packing charge",
+      "amount": 20,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 754,
+  "stop_point": "summary"
+}

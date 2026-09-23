@@ -1,0 +1,22 @@
+{
+  "store_id": "l23",
+  "level": 23,
+  "name": "Volt Vault",
+  "url": "http://localhost:8000/l23/",
+  "task": "Buy one 20000 mAh portable power bank with standard delivery.",
+  "first_price": 1799,
+  "upfront_charges": [
+    {
+      "label": "GST",
+      "amount": 90
+    },
+    {
+      "label": "Delivery",
+      "amount": 59
+    }
+  ],
+  "chosen_options": [],
+  "traps": [],
+  "expected_final_total": 1948,
+  "stop_point": "summary"
+}

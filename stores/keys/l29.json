@@ -1,0 +1,26 @@
+{
+  "store_id": "l29",
+  "level": 29,
+  "name": "Marigold Works",
+  "url": "http://localhost:8000/l29/",
+  "task": "Buy one set of four brass diyas with standard delivery.",
+  "first_price": 1240,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 45
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Standard gift wrap",
+      "amount": 25,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 1310,
+  "stop_point": "summary"
+}

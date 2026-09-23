@@ -1,0 +1,26 @@
+{
+  "store_id": "l35",
+  "level": 35,
+  "name": "Anklet Alley",
+  "url": "http://localhost:8000/l35/",
+  "task": "Buy one pair of silver anklets with standard delivery.",
+  "first_price": 1180,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Gift box",
+      "amount": 40,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 1220,
+  "stop_point": "summary"
+}

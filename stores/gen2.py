@@ -9,10 +9,18 @@ The product, cart, gift, options and pay pages come from gen.py's builders. The 
 the script and the styles are this file's own because the new mechanics need markup that
 gen.py does not have. Extras a store can switch on:
 
-  details           the review page prints only "Amount payable" and a "View price details"
-                    button; the itemised lines, including a charge that appeared nowhere
-                    earlier, sit in a container that is display:none until the button is
-                    clicked (key type collapsed_fee)
+  details           the review page prints "Amount payable" and a "View price details" button;
+                    a charge that appeared nowhere earlier sits in a container that is
+                    display:none until the button is clicked (key type collapsed_fee). With
+                    "panel": "all" (the default) the whole itemisation is in that container;
+                    with "panel": "charge" the other lines stay visible above the amount and
+                    only that charge is behind the button, so the visible lines fall short of
+                    the amount payable by exactly that charge. A delivery-switch note is
+                    always plain visible text, never inside the container. At most one scored
+                    charge may sit behind the button (checked at build time): the checker folds
+                    every unreported rupee into one gap finding that pairs with one trap only,
+                    so a record that never presses the button scores 0/n once two scored lines
+                    share a fold
   delivery_upgrade  whatever delivery the shopper picks, the review page applies and shows the
                     express option, with a note and a "Change delivery" link back to the
                     options page (key type delivery_switched; the key keeps the shopper's
@@ -148,7 +156,7 @@ STORES = [
             "delivery_upgrade": {"to": "express", "note": "We upgraded your delivery to Express",
                                  "link": "Change delivery"},
             "details": {"show": "View price details", "hide": "Hide price details",
-                        "charge": {"label": "Service fee", "amount": 39}},
+                        "charge": {"label": "Service fee", "amount": 39}, "panel": "charge"},
             "payment_methods": {
                 "default": None, "placeholder": "Select payment",
                 "options": [{"id": "upi", "text": "UPI"}, {"id": "card", "text": "Card"},
@@ -167,25 +175,38 @@ FORBIDDEN_WORDS2 = FORBIDDEN_WORDS + ["switch-trap", "switched", "bait", "vanish
 # ---------- review page ----------
 
 def review_box(s):
-    """The order box of the review page. With "details" the lines sit behind a button."""
+    """The order box of the review page. With "details" some or all lines sit behind a button.
+
+    The delivery-switch note is always outside the panel: it must be readable without a click.
+    """
     e = s["extras"]
     lines = '<div id="order-lines"></div>'
+    note = ""
     if "delivery_upgrade" in e:
         du = e["delivery_upgrade"]
-        lines += f'\n  <p id="delivery-note" class="small">{du["note"]}. <a href="options.html">{du["link"]}</a></p>'
+        note = f'\n  <p id="delivery-note" class="small">{du["note"]}. <a href="options.html">{du["link"]}</a></p>'
     if "details" in e:
         dt = e["details"]
-        return f"""<aside class="order-box">
-  <h2>Order summary</h2>
-  <p class="payable">Amount payable <span id="order-total"></span></p>
+        payable = f"""  <p class="payable">Amount payable <span id="order-total"></span></p>
   <button id="details-button" type="button">{dt['show']}</button>
-  <div id="details-panel" class="details">
+  <div id="details-panel" class="details">"""
+        if dt.get("panel", "all") == "charge":
+            return f"""<aside class="order-box">
+  <h2>Order summary</h2>
+  {lines}{note}
+{payable}
+  <div id="details-lines"></div>
+  </div>
+</aside>"""
+        return f"""<aside class="order-box">
+  <h2>Order summary</h2>{note}
+{payable}
   {lines}
   </div>
 </aside>"""
     return f"""<aside class="order-box">
   <h2>Order summary</h2>
-  {lines}
+  {lines}{note}
   <div class="line total"><span>Total</span><span id="order-total"></span></div>
 </aside>"""
 
@@ -263,7 +284,7 @@ function renderOrder(pageName) {
       return '<div class="line"><span>' + l.label + "</span><span>" + money(l.amount) + "</span></div>";
     }).join("");
   }
-  var t = lines.reduce(function (a, l) { return a + l.amount; }, 0);
+@@DETAILS_LINES@@  var t = lines.reduce(function (a, l) { return a + l.amount; }, 0);
   if (tot) tot.textContent = money(t);
   return t;
 }
@@ -358,6 +379,29 @@ else if (PAGE === "summary") initSummary();
 else if (PAGE === "pay") renderOrder("pay");
 """
 
+# Inserted at @@DETAILS_LINES@@ only for a "panel": "charge" store: the line flagged inDetails
+# (the charge behind the button) renders into the panel, everything else stays in #order-lines.
+JS_DETAILS_LINES = r"""  var panelBox = document.getElementById("details-lines");
+  if (box && panelBox) {
+    var lineHtml = function (l) {
+      return '<div class="line"><span>' + l.label + "</span><span>" + money(l.amount) + "</span></div>";
+    };
+    box.innerHTML = lines.filter(function (l) { return !l.inDetails; }).map(lineHtml).join("");
+    panelBox.innerHTML = lines.filter(function (l) { return l.inDetails; }).map(lineHtml).join("");
+  }
+"""
+
+
+def details_config(e):
+    """STORE.details for app.js, or None. The charge carries inDetails when only it sits in the panel."""
+    if "details" not in e:
+        return None
+    dt = e["details"]
+    charge = dict(dt["charge"])
+    if dt.get("panel", "all") == "charge":
+        charge["inDetails"] = True
+    return {"show": dt["show"], "hide": dt["hide"], "charge": charge}
+
 
 def app_js(s):
     e = s["extras"]
@@ -370,8 +414,7 @@ def app_js(s):
         "protection": e.get("preticked"),
         "gift": ({"label": e["gift_page"]["label"], "amount": e["gift_page"]["amount"]} if "gift_page" in e else None),
         "deliveryUpgrade": ({"to": e["delivery_upgrade"]["to"]} if "delivery_upgrade" in e else None),
-        "details": ({"show": e["details"]["show"], "hide": e["details"]["hide"], "charge": e["details"]["charge"]}
-                    if "details" in e else None),
+        "details": details_config(e),
         "priceUpdate": e.get("price_update"),
         "cartOffer": e.get("cart_offer"),
         "payment": None,
@@ -380,7 +423,11 @@ def app_js(s):
         pm = e["payment_methods"]
         cfg["payment"] = {"default": pm["default"], "options": pm["options"],
                           "codOption": pm.get("cod_option"), "codCharge": pm.get("cod_charge")}
-    return "var STORE = " + json.dumps(cfg, ensure_ascii=False, indent=2) + ";\n" + JS_BODY
+    panel_charge = "details" in e and e["details"].get("panel", "all") == "charge"
+    body = JS_BODY.replace("@@DETAILS_LINES@@", JS_DETAILS_LINES if panel_charge else "")
+    if "@@" in body:
+        raise SystemExit("unfilled script marker in " + s["id"])
+    return "var STORE = " + json.dumps(cfg, ensure_ascii=False, indent=2) + ";\n" + body
 
 
 EXTRA_CSS = """
@@ -489,6 +536,17 @@ def build_key(s):
     }
 
 
+def folded_scored_traps(s, key):
+    """Scored traps whose review-page line sits inside the details panel."""
+    dt = s["extras"].get("details")
+    if not dt:
+        return []
+    scored = [t for t in key["traps"] if t["scored"] and t.get("in_total", True)]
+    if dt.get("panel", "all") == "charge":
+        return [t for t in scored if t["type"] == "collapsed_fee"]
+    return scored
+
+
 # ---------- main ----------
 
 def check_neutral(folder):
@@ -517,6 +575,8 @@ def main():
     KEYS.mkdir(parents=True, exist_ok=True)
     for s in STORES:
         assert s["id"] not in EARLIER_STORES, s["id"]
+        if "details" in s["extras"]:
+            assert s["extras"]["details"].get("panel", "all") in ("all", "charge"), s["id"]
         out = WWW / s["id"]
         if out.exists():
             shutil.rmtree(out)
@@ -532,6 +592,10 @@ def main():
         (out / "style.css").write_text(style_css(s), encoding="utf-8")
         check_neutral(out)
         key = build_key(s)
+        folded = folded_scored_traps(s, key)
+        if len(folded) > 1:
+            raise SystemExit(f"{s['id']}: {len(folded)} scored charges behind one fold "
+                             f"({', '.join(t['label'] for t in folded)}); keep at most one")
         (KEYS / f"{s['id']}.json").write_text(json.dumps(key, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"{s['id']} {s['name']}: expected_final_total={key['expected_final_total']} -> {out}")
     check_earlier_untouched()

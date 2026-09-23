@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delivery slot – Morning Milkman</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="layout-timeline" data-page="slot">
+<header class="site-header">
+  <a class="brand" href="index.html">Morning Milkman</a>
+  <nav><a href="cart.html">Your list</a></nav>
+</header>
+<main class="shell">
+<nav class="steps"><ol><li class="">Your list</li><li class="active">Slot</li><li class="">Delivery</li><li class="">Review</li><li class="">Done</li></ol></nav>
+<div class="content-wrap">
+<h1>Delivery slot</h1>
+<section class="content">
+<p>When should we come by?</p><div id="slot-choice" class="slot-choice"><p><label><input type="radio" name="slot" id="slot-morning" data-slot="morning" value="Morning 9-12 (free)"> Morning 9-12 (free)</label></p><p><label><input type="radio" name="slot" id="slot-evening" data-slot="evening" value="Evening 6-9 (+₹49)" checked> Evening 6-9 (+₹49)</label></p></div><aside class="order-box">
+  <h2>Order summary</h2>
+  <div id="order-lines"></div>
+  <div class="line total"><span>Total</span><span id="order-total"></span></div>
+</aside><p><button id="next-button" type="button">Go to the next step</button></p>
+</section>
+</div>
+</main>
+<footer class="site-footer">Morning Milkman · Mumbai</footer>
+<script src="app.js"></script>
+</body>
+</html>

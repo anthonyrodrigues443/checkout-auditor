@@ -1,0 +1,37 @@
+{
+  "store_id": "l22",
+  "level": 22,
+  "name": "Yarn Yard",
+  "url": "http://localhost:8000/l22/",
+  "task": "Buy one 100 g skein of merino wool yarn with standard delivery.",
+  "first_price": 390,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 40
+    },
+    {
+      "label": "Packaging",
+      "amount": 0
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "estimate_increase",
+      "label": "Delivery",
+      "amount": 20,
+      "scored": true,
+      "pattern": "bait and switch"
+    },
+    {
+      "type": "estimate_increase",
+      "label": "Packaging",
+      "amount": 20,
+      "scored": true,
+      "pattern": "bait and switch"
+    }
+  ],
+  "expected_final_total": 470,
+  "stop_point": "summary"
+}

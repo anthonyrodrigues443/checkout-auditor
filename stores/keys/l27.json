@@ -1,0 +1,33 @@
+{
+  "store_id": "l27",
+  "level": 27,
+  "name": "Morning Milkman",
+  "url": "http://localhost:8000/l27/",
+  "task": "Buy one 1 L bottle of cold-pressed groundnut oil with standard delivery.",
+  "first_price": 399,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "preselected_slot_fee",
+      "label": "Evening slot",
+      "amount": 49,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "collapsed_fee",
+      "label": "Convenience fee",
+      "amount": 19,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 467,
+  "stop_point": "summary"
+}

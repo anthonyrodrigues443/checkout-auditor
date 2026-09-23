@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delivery options – Suds and Such</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="layout-kiosk" data-page="options">
+<header class="site-header">
+  <a class="brand" href="index.html">Suds and Such</a>
+  <nav><a href="cart.html">Your bucket</a></nav>
+</header>
+<main class="shell">
+<h1>Delivery and address</h1>
+<aside class="order-box">
+  <h2>Order summary</h2>
+  <div id="order-lines"></div>
+  <div class="line total"><span>Total</span><span id="order-total"></span></div>
+</aside>
+<section class="content">
+<div class="address"><strong>Deliver to</strong><br>Asha Menon, 14 Hill Road, Bandra West, Mumbai 400050<br>+91 98200 12345 · asha@example.com</div><p><label>Delivery <select id="delivery-select"><option value="standard" selected>Standard – Free</option><option value="express">Express ₹95</option></select></label></p><p><label>Packaging <select id="packing-select"><option value="eco">Eco pouch – free</option><option value="box" selected>Premium box ₹30</option></select></label></p><p><label>Delivery zone <select id="zone-select"><option value="mumbai">Mumbai – free</option><option value="outside" selected>Outside Mumbai ₹80</option></select></label></p><p id="notice" class="notice"></p><p><button id="next-button" type="button">Carry forward</button></p>
+</section>
+</main>
+<footer class="site-footer">Suds and Such · Mumbai</footer>
+<script src="app.js"></script>
+</body>
+</html>

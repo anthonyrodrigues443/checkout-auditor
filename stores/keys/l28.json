@@ -1,0 +1,26 @@
+{
+  "store_id": "l28",
+  "level": 28,
+  "name": "Pot Luck",
+  "url": "http://localhost:8000/l28/",
+  "task": "Buy TWO 8 inch terracotta planters with standard delivery.",
+  "first_price": 698,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 40
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Multi-item handling",
+      "amount": 30,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 768,
+  "stop_point": "summary"
+}

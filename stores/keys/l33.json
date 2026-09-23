@@ -1,0 +1,18 @@
+{
+  "store_id": "l33",
+  "level": 33,
+  "name": "Pedal Point",
+  "url": "http://localhost:8000/l33/",
+  "task": "Buy one cycling helmet with standard delivery.",
+  "first_price": 1150,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [],
+  "expected_final_total": 1150,
+  "stop_point": "summary"
+}

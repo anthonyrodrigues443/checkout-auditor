@@ -1,0 +1,26 @@
+{
+  "store_id": "l34",
+  "level": 34,
+  "name": "Keycap Kiosk",
+  "url": "http://localhost:8000/l34/",
+  "task": "Buy one compact mechanical keyboard with standard delivery.",
+  "first_price": 3299,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Basic protection",
+      "amount": 59,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 3358,
+  "stop_point": "summary"
+}

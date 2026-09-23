@@ -1,0 +1,33 @@
+{
+  "store_id": "l31",
+  "level": 31,
+  "name": "Suds and Such",
+  "url": "http://localhost:8000/l31/",
+  "task": "Buy one set of three handmade soap bars with standard delivery.",
+  "first_price": 465,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 0
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "preselected_option_fee",
+      "label": "Premium box",
+      "amount": 30,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "preselected_zone_fee",
+      "label": "Delivery (outside Mumbai)",
+      "amount": 80,
+      "scored": true,
+      "pattern": "interface interference"
+    }
+  ],
+  "expected_final_total": 575,
+  "stop_point": "summary"
+}

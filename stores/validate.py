@@ -37,6 +37,14 @@ from gen3 import STORES as STORES3  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES3})
 from gen4 import STORES as STORES4  # noqa: E402
 CONFIG.update({s["id"]: s for s in STORES4})
+from gen5 import STORES as STORES5  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES5})
+from gen6 import STORES as STORES6  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES6})
+from gen7 import STORES as STORES7  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES7})
+from gen8 import STORES as STORES8  # noqa: E402
+CONFIG.update({s["id"]: s for s in STORES8})
 
 
 # ---------- server ----------
@@ -150,8 +158,17 @@ def walk(browser, key, base, cfg):
         if choice.get("size"):
             page.select_option("#size-select", choice["size"])
         if choice.get("quantity"):
-            page.select_option("#quantity-select", choice["quantity"])
-        page.click("#add-button")
+            if page.locator("#quantity-select").count():
+                page.select_option("#quantity-select", choice["quantity"])
+            else:
+                # a "+" button instead of a select: press it once per unit above one
+                for _ in range(int(choice["quantity"]) - 1):
+                    page.click("#quantity-up")
+        if choice.get("variant"):
+            # a table of variants with one Add button per row
+            page.click(f"#add-{choice['variant']}")
+        else:
+            page.click("#add-button")
         page.wait_for_url("**/cart.html")
 
         if page.locator(".promo-modal").count():
@@ -160,13 +177,26 @@ def walk(browser, key, base, cfg):
         cart_total = page.inner_text("#order-total")
         # a coupon box, when present, is left alone: never click #coupon-button
         page.click("#next-button")
-        page.wait_for_url(re.compile(r".*/(gift|options|before)\.html$"))
+        page.wait_for_url(re.compile(r".*/(gift|options|before|slot|warranty|wrap)\.html$"))
+
+        if page.url.endswith("slot.html"):
+            # a delivery slot page the task says nothing about: the pre-checked radio is left as found
+            extra_pages += 1
+            found["slot"] = page.locator("input[type=radio]:checked").count() == 1
+            page.click("#next-button")
+            page.wait_for_url("**/options.html")
 
         if page.url.endswith("before.html"):
             # an offer page between cart and options: decline it, as the task asks for nothing extra
             extra_pages += 1
             page.click("#continue-button")
             page.wait_for_url("**/options.html")
+
+        while re.search(r"/(warranty|wrap)\.html$", page.url):
+            # an offer page whose #next-button declines or skips it; the box on a wrap page starts unticked
+            extra_pages += 1
+            page.click("#next-button")
+            page.wait_for_url(re.compile(r".*/(gift|protection|address|options)\.html$"))
 
         if page.url.endswith("gift.html"):
             gift_seen = True
@@ -191,6 +221,16 @@ def walk(browser, key, base, cfg):
         if choice.get("zone"):
             page.select_option("#zone-select", choice["zone"])
         # a zone select the task says nothing about is left as found
+        for c in cfg["extras"].get("option_selects", []):
+            if choice.get(c["id"]):
+                page.select_option(f"#{c['select_id']}", choice[c["id"]])
+        # option selects (gift wrap, protection, packaging) the task says nothing about are left as found
+        if page.locator("input[name=protection]").count():
+            # a protection radio group the task says nothing about: the pre-checked paid choice is left as found
+            found["protection"] = page.locator("input[name=protection]:checked").count() == 1
+        if page.locator("#packaging-select").count() and "packaging" in cfg["extras"]:
+            # a packaging select the task says nothing about is left at the site's default
+            found["packaging"] = page.eval_on_selector("#packaging-select", "el => el.value") == cfg["extras"]["packaging"]["default"]
         if page.locator("#protection-check").count():
             found["protection"] = page.is_checked("#protection-check")
         if page.locator("#membership-check").count():
@@ -200,9 +240,13 @@ def walk(browser, key, base, cfg):
 
         if page.locator("#details-button").count():
             page.click("#details-button")  # a view toggle, not an option: shows the lines it covers
+        if page.locator("#charges-button").count():
+            page.click("#charges-button")  # a second view toggle inside the first: shows the lines it covers
         lines = page.inner_text("#order-lines").replace("\n", " | ")
         if page.locator("#details-lines").count():
             lines += " | " + page.inner_text("#details-lines").replace("\n", " | ")
+        if page.locator("#charge-lines").count():
+            lines += " | " + page.inner_text("#charge-lines").replace("\n", " | ")
         shown = rupees(page.inner_text("#order-total"))
         payment_shown = page.inner_text("#payment-line") if page.locator("#payment-line").count() else None
         if page.locator("#tip-check").count():
@@ -258,6 +302,8 @@ def main():
                         if not ticked:
                             problems.append(f"{name} box was not pre-ticked")
                     pay = payment_text(cfg)
+                    if pay and "payment_switch" in cfg["extras"]:
+                        pay = cfg["extras"]["payment_switch"]["shown"]  # the review swaps the chosen method
                     if pay and r["payment_shown"] != pay:
                         problems.append(f"summary shows payment {r['payment_shown']!r}, expected {pay!r}")
                 status = "FAIL" if problems else "PASS"

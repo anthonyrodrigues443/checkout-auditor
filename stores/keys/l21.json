@@ -1,0 +1,54 @@
+{
+  "store_id": "l21",
+  "level": 21,
+  "name": "Hearth and Ladle",
+  "url": "http://localhost:8000/l21/",
+  "task": "Buy one 28 cm cast iron tawa with standard delivery.",
+  "first_price": 1150,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Gift note",
+      "amount": 30,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "pre_ticked_addon",
+      "label": "Damage cover",
+      "amount": 99,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "collapsed_fee",
+      "label": "Service fee",
+      "amount": 25,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "upsell_popup",
+      "label": "Silicone handle sleeve",
+      "amount": 199,
+      "scored": false,
+      "pattern": "nagging"
+    },
+    {
+      "type": "upsell_page",
+      "label": "2-year cover",
+      "amount": 149,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 1304,
+  "stop_point": "summary"
+}

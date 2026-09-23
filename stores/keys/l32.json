@@ -1,0 +1,18 @@
+{
+  "store_id": "l32",
+  "level": 32,
+  "name": "Asana Attic",
+  "url": "http://localhost:8000/l32/",
+  "task": "Buy one 6 mm jute yoga mat with standard delivery.",
+  "first_price": 1090,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 55
+    }
+  ],
+  "chosen_options": [],
+  "traps": [],
+  "expected_final_total": 1145,
+  "stop_point": "summary"
+}

@@ -1,0 +1,45 @@
+{
+  "store_id": "l24",
+  "level": 24,
+  "name": "Petal Press",
+  "url": "http://localhost:8000/l24/",
+  "task": "Buy one dried flower bouquet with standard delivery and pay by cash on delivery.",
+  "first_price": 899,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    },
+    {
+      "label": "Cash on delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Card message",
+      "amount": 25,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "payment_switched_fee",
+      "label": "Card convenience fee",
+      "amount": 29,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
+      "type": "vanished_discount",
+      "label": "First order offer",
+      "amount": 150,
+      "scored": true,
+      "pattern": "bait and switch",
+      "in_total": false
+    }
+  ],
+  "expected_final_total": 953,
+  "stop_point": "summary"
+}
