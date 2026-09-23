@@ -1,0 +1,41 @@
+{
+  "store_id": "l4",
+  "level": 4,
+  "name": "Gadget Grove",
+  "url": "http://localhost:8000/l4/",
+  "task": "Buy one pair of the black wireless earbuds with express delivery.",
+  "first_price": 1999,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Express delivery",
+      "amount": 99
+    }
+  ],
+  "traps": [
+    {
+      "type": "delivery_triggered_fee",
+      "label": "Handling charge",
+      "amount": 35,
+      "scored": true,
+      "pattern": "drip pricing"
+    },
+    {
+      "type": "misleading_discount",
+      "label": "Festive offer: ₹100 off",
+      "amount": -40,
+      "claimed": -100,
+      "scored": true,
+      "pattern": null
+    },
+    {
+      "type": "early_pay_button",
+      "label": "Pay now",
+      "amount": 0,
+      "scored": false,
+      "pattern": "false urgency"
+    }
+  ],
+  "expected_final_total": 2093,
+  "stop_point": "summary"
+}

@@ -133,7 +133,7 @@ async def run_audit(
     on_event=None,
 ) -> dict[str, Any]:
     from claude_agent_sdk import (
-        AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, ResultMessage, TextBlock,
+        AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, ResultMessage, SystemMessage, TextBlock,
         ToolUseBlock, create_sdk_mcp_server,
     )
 
@@ -177,21 +177,9 @@ async def run_audit(
         await session.open(store_url, model_title=window_title)
         tools = build_tools(session)
         server = create_sdk_mcp_server(SERVER_NAME, version="1.0.0", tools=tools)
-        opts = ClaudeAgentOptions(
-            model=model,
-            system_prompt=SYSTEM_PROMPT,
-            tools=[],
-            disallowed_tools=BUILTIN_TOOLS,
-            allowed_tools=MCP_TOOL_NAMES,
-            mcp_servers={SERVER_NAME: server},
-            strict_mcp_config=True,
-            permission_mode="dontAsk",
-            max_turns=max_turns,
-            max_budget_usd=max_budget_usd,
-            effort=effort,
-            setting_sources=[],
-            cwd=str(runs_dir),
-            env=sdk_env or {},
+        opts = make_options(
+            server, model=model, max_turns=max_turns, max_budget_usd=max_budget_usd, effort=effort,
+            sdk_env=sdk_env, runs_dir=runs_dir,
             hooks={
                 "PreToolUse": [HookMatcher(matcher=None, hooks=[pre_hook])],
                 "PostToolUse": [HookMatcher(matcher=None, hooks=[post_hook])],
@@ -208,7 +196,9 @@ async def run_audit(
                 record["settings"]["server_tools"] = _tool_names_from_info(info)
                 await client.query(user_prompt(store_url, task))
                 async for msg in client.receive_response():
-                    if isinstance(msg, AssistantMessage):
+                    if isinstance(msg, SystemMessage) and msg.subtype == "init":
+                        record["settings"]["server_tools"] = list((msg.data or {}).get("tools", []))
+                    elif isinstance(msg, AssistantMessage):
                         for b in msg.content:
                             if isinstance(b, TextBlock):
                                 texts.append(b.text)
@@ -269,6 +259,31 @@ async def run_audit(
     path.write_text(json.dumps(record, indent=1, ensure_ascii=False))
     record["_path"] = str(path)
     return record
+
+
+def make_options(server, *, model: str, max_turns: int = DEFAULT_MAX_TURNS,
+                 max_budget_usd: float | None = DEFAULT_MAX_BUDGET_USD, effort: str | None = None,
+                 sdk_env: dict[str, str] | None = None, runs_dir: Path = RUNS_DIR, hooks=None):
+    """The one place the agent's settings are defined. Identical for every model."""
+    from claude_agent_sdk import ClaudeAgentOptions
+
+    return ClaudeAgentOptions(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[],
+        disallowed_tools=BUILTIN_TOOLS,
+        allowed_tools=MCP_TOOL_NAMES,
+        mcp_servers={SERVER_NAME: server},
+        strict_mcp_config=True,
+        permission_mode="dontAsk",
+        max_turns=max_turns,
+        max_budget_usd=max_budget_usd,
+        effort=effort,
+        setting_sources=[],
+        cwd=str(runs_dir),
+        env=sdk_env or {},
+        hooks=hooks,
+    )
 
 
 def _tool_names_from_info(info) -> list[str]:

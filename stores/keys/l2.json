@@ -1,0 +1,26 @@
+{
+  "store_id": "l2",
+  "level": 2,
+  "name": "Sole Story",
+  "url": "http://localhost:8000/l2/",
+  "task": "Buy one pair of the white running shoes in size 9 with standard delivery.",
+  "first_price": 2499,
+  "upfront_charges": [],
+  "chosen_options": [
+    {
+      "label": "Standard delivery",
+      "amount": 0
+    }
+  ],
+  "traps": [
+    {
+      "type": "drip_fee",
+      "label": "Convenience fee",
+      "amount": 30,
+      "scored": true,
+      "pattern": "drip pricing"
+    }
+  ],
+  "expected_final_total": 2529,
+  "stop_point": "summary"
+}

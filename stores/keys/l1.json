@@ -1,0 +1,22 @@
+{
+  "store_id": "l1",
+  "level": 1,
+  "name": "Kirana Direct",
+  "url": "http://localhost:8000/l1/",
+  "task": "Buy one 5 kg bag of basmati rice with standard delivery.",
+  "first_price": 640,
+  "upfront_charges": [
+    {
+      "label": "GST",
+      "amount": 32
+    },
+    {
+      "label": "Delivery",
+      "amount": 40
+    }
+  ],
+  "chosen_options": [],
+  "traps": [],
+  "expected_final_total": 712,
+  "stop_point": "summary"
+}

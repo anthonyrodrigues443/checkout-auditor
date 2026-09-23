@@ -1,0 +1,33 @@
+{
+  "store_id": "l3",
+  "level": 3,
+  "name": "Mugly",
+  "url": "http://localhost:8000/l3/",
+  "task": "Buy one blue ceramic mug with standard delivery.",
+  "first_price": 499,
+  "upfront_charges": [
+    {
+      "label": "Delivery",
+      "amount": 49
+    }
+  ],
+  "chosen_options": [],
+  "traps": [
+    {
+      "type": "pre_ticked_addon",
+      "label": "Shipping protection",
+      "amount": 49,
+      "scored": true,
+      "pattern": "basket sneaking"
+    },
+    {
+      "type": "upsell_popup",
+      "label": "Matching coaster",
+      "amount": 149,
+      "scored": false,
+      "pattern": "nagging"
+    }
+  ],
+  "expected_final_total": 597,
+  "stop_point": "summary"
+}
