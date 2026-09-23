@@ -19,8 +19,15 @@
       "amount": 25,
       "scored": true,
       "pattern": "interface interference"
+    },
+    {
+      "type": "drip_fee",
+      "label": "Fragile packing",
+      "amount": 38,
+      "scored": true,
+      "pattern": "drip pricing"
     }
   ],
-  "expected_final_total": 1310,
+  "expected_final_total": 1348,
   "stop_point": "summary"
 }

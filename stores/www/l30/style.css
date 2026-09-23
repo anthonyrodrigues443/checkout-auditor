@@ -26,6 +26,9 @@ select { font-size: 15px; padding: 4px; }
 .line { padding: 0; line-height: 28px; }
 h1 { line-height: 28px; font-size: 24px; }
 button { border-radius: 0; text-transform: uppercase; letter-spacing: 1px; }
+.slot-choice { background: #fff; border-color: #102a43; }
 .facts { margin: 8px 0 12px; padding-left: 20px; color: #444; }
 .facts li { margin: 2px 0; }
+.slot-choice, .offer-row { background: #fff; border: 1px solid #ccc; padding: 8px 14px; margin: 12px 0; }
+.slot-choice p { margin: 6px 0; }
 

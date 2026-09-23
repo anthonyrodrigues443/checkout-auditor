@@ -25,9 +25,11 @@ h1 { font-size: 30px; }
 .line { text-align: left; }
 button { width: 100%; padding: 16px 20px; font-size: 20px; border-radius: 12px; margin-top: 8px; }
 select { font-size: 18px; padding: 8px; }
-.order-box, .price-lines, .address { border-radius: 12px; border: 2px solid #2b2d42; text-align: left; }
+.order-box, .price-lines, .address, .offer-row { border-radius: 12px; border: 2px solid #2b2d42; text-align: left; }
 .facts { text-align: left; }
 .site-header { justify-content: center; gap: 24px; font-size: 20px; }
 .facts { margin: 8px 0 12px; padding-left: 20px; color: #444; }
 .facts li { margin: 2px 0; }
+.slot-choice, .offer-row { background: #fff; border: 1px solid #ccc; padding: 8px 14px; margin: 12px 0; }
+.slot-choice p { margin: 6px 0; }
 

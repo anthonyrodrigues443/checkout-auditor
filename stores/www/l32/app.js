@@ -4,7 +4,7 @@ var STORE = {
     "cart": "shelf",
     "add": "Add to shelf",
     "next": "Move to review",
-    "pay": "Place the order"
+    "pay": "Place the order and pay"
   },
   "product": {
     "name": "Jute Yoga Mat 6 mm",
@@ -28,57 +28,34 @@ var STORE = {
       }
     ]
   },
-  "choices": [
+  "flow": [
+    "index",
+    "cart",
+    "wrap",
+    "protection",
+    "address",
+    "options",
+    "summary",
+    "pay"
+  ],
+  "slot": null,
+  "offers": [
     {
       "id": "wrap",
-      "selectId": "wrap-select",
-      "initial": "none",
-      "options": [
-        {
-          "id": "none",
-          "text": "No wrap – free",
-          "line": "No gift wrap",
-          "amount": 0
-        },
-        {
-          "id": "standard",
-          "text": "Standard wrap ₹25",
-          "line": "Standard gift wrap",
-          "amount": 25
-        },
-        {
-          "id": "premium",
-          "text": "Premium wrap ₹60",
-          "line": "Premium gift wrap",
-          "amount": 60
-        }
-      ]
+      "page": "wrap",
+      "checkId": "wrap-check",
+      "line": "Gift wrap",
+      "amount": 60
     },
     {
       "id": "cover",
-      "selectId": "cover-select",
-      "initial": "none",
-      "options": [
-        {
-          "id": "none",
-          "text": "None – free",
-          "line": "No protection",
-          "amount": 0
-        },
-        {
-          "id": "basic",
-          "text": "Basic cover ₹49",
-          "line": "Basic cover",
-          "amount": 49
-        },
-        {
-          "id": "full",
-          "text": "Full cover ₹99",
-          "line": "Full cover",
-          "amount": 99
-        }
-      ]
-    },
+      "page": "protection",
+      "checkId": "cover-check",
+      "line": "2-year cover",
+      "amount": 199
+    }
+  ],
+  "choices": [
     {
       "id": "packing",
       "selectId": "packing-select",
@@ -98,10 +75,12 @@ var STORE = {
         }
       ]
     }
-  ]
+  ],
+  "reviewCharge": null
 };
 
 var KEY = STORE.storageKey;
+var FLOW = STORE.flow;
 
 function money(n) {
   var sign = n < 0 ? "-" : "";
@@ -116,8 +95,12 @@ function pick(opts, id) {
   for (var i = 0; i < opts.length; i++) if (opts[i].id === id) return opts[i];
   return null;
 }
+function at(pageName) { return FLOW.indexOf(pageName); }
+function reached(pageName, target) { return at(target) >= 0 && at(pageName) >= at(target); }
+function nextOf(pageName) { return FLOW[at(pageName) + 1] + ".html"; }
 function deliveryChoice(s) { return pick(STORE.delivery.options, s.delivery || STORE.delivery.initial); }
 function pickedOption(c, s) { return pick(c.options, (s.picks && s.picks[c.id]) || c.initial); }
+function slotChoice(s) { return STORE.slot ? pick(STORE.slot.options, s.slot || STORE.slot.initial) : null; }
 function startingPicks() {
   var picks = {};
   STORE.choices.forEach(function (c) { picks[c.id] = c.initial; });
@@ -129,12 +112,20 @@ function orderLines(s, pageName) {
   STORE.fixedCharges.forEach(function (c) { out.push(c); });
   var d = deliveryChoice(s);
   if (d) out.push({label: d.line, amount: d.amount});
-  if (pageName !== "cart") {
+  if (STORE.slot && reached(pageName, "slot")) {
+    var sl = slotChoice(s);
+    if (sl) out.push({label: sl.line, amount: sl.amount});
+  }
+  STORE.offers.forEach(function (o) {
+    if (s.offers && s.offers[o.id]) out.push({label: o.line, amount: o.amount});
+  });
+  if (reached(pageName, "options")) {
     STORE.choices.forEach(function (c) {
       var o = pickedOption(c, s);
       if (o) out.push({label: o.line, amount: o.amount});
     });
   }
+  if (STORE.reviewCharge && reached(pageName, "summary")) out.push(STORE.reviewCharge);
   return out;
 }
 
@@ -158,16 +149,56 @@ function renderOrder(pageName) {
   return t;
 }
 
+function wireNext(pageName) {
+  var b = document.getElementById("next-button");
+  if (b) b.addEventListener("click", function () { location.href = nextOf(pageName); });
+}
+
 function initProduct() {
   document.getElementById("add-button").addEventListener("click", function () {
-    save({qty: 1, size: null, delivery: null, picks: startingPicks()});
+    save({qty: 1, delivery: null, picks: startingPicks(), slot: STORE.slot ? STORE.slot.initial : null, offers: {}});
     location.href = "cart.html";
   });
 }
 
 function initCart() {
   renderOrder("cart");
-  document.getElementById("next-button").addEventListener("click", function () { location.href = "options.html"; });
+  wireNext("cart");
+}
+
+function initSlot() {
+  var s = load();
+  if (s) {
+    if (!s.slot) { s.slot = STORE.slot.initial; save(s); }
+    var radios = document.querySelectorAll("input[name=slot]");
+    Array.prototype.forEach.call(radios, function (r) {
+      r.checked = r.getAttribute("data-slot") === s.slot;
+      r.addEventListener("change", function () {
+        if (r.checked) { s.slot = r.getAttribute("data-slot"); save(s); renderOrder("slot"); }
+      });
+    });
+  }
+  renderOrder("slot");
+  wireNext("slot");
+}
+
+function initOffer(pageName) {
+  var s = load();
+  var current = null;
+  STORE.offers.forEach(function (o) { if (o.page === pageName) current = o; });
+  if (s && current) {
+    if (!s.offers) s.offers = {};
+    var el = document.getElementById(current.checkId);
+    el.checked = !!s.offers[current.id];
+    el.addEventListener("change", function () { s.offers[current.id] = el.checked; save(s); renderOrder(pageName); });
+  }
+  renderOrder(pageName);
+  wireNext(pageName);
+}
+
+function initAddress() {
+  renderOrder("address");
+  wireNext("address");
 }
 
 function initOptions() {
@@ -188,7 +219,7 @@ function initOptions() {
   renderOrder("options");
   document.getElementById("next-button").addEventListener("click", function () {
     if (!s.delivery) { notice("Please choose a delivery option."); return; }
-    location.href = "summary.html";
+    location.href = nextOf("options");
   });
 }
 
@@ -208,6 +239,9 @@ function initSummary() {
 var PAGE = document.body.getAttribute("data-page");
 if (PAGE === "index") initProduct();
 else if (PAGE === "cart") initCart();
+else if (PAGE === "slot") initSlot();
+else if (PAGE === "address") initAddress();
 else if (PAGE === "options") initOptions();
 else if (PAGE === "summary") initSummary();
 else if (PAGE === "pay") renderOrder("pay");
+else initOffer(PAGE);

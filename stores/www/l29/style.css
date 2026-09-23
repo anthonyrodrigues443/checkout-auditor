@@ -28,4 +28,6 @@ select { font-size: 15px; padding: 4px; }
 .content { background: #fff; border: 1px solid #cfd8dc; padding: 18px; }
 .facts { margin: 8px 0 12px; padding-left: 20px; color: #444; }
 .facts li { margin: 2px 0; }
+.slot-choice, .offer-row { background: #fff; border: 1px solid #ccc; padding: 8px 14px; margin: 12px 0; }
+.slot-choice p { margin: 6px 0; }
 

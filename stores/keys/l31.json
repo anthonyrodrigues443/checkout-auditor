@@ -22,12 +22,12 @@
     },
     {
       "type": "preselected_zone_fee",
-      "label": "Delivery (outside Mumbai)",
-      "amount": 80,
+      "label": "Delivery (outside city limits)",
+      "amount": 70,
       "scored": true,
       "pattern": "interface interference"
     }
   ],
-  "expected_final_total": 575,
+  "expected_final_total": 565,
   "stop_point": "summary"
 }

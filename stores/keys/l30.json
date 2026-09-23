@@ -14,6 +14,13 @@
   "chosen_options": [],
   "traps": [
     {
+      "type": "preselected_slot_fee",
+      "label": "Evening delivery window",
+      "amount": 40,
+      "scored": true,
+      "pattern": "interface interference"
+    },
+    {
       "type": "preselected_option_fee",
       "label": "Basic cover",
       "amount": 49,
@@ -21,6 +28,6 @@
       "pattern": "interface interference"
     }
   ],
-  "expected_final_total": 3309,
+  "expected_final_total": 3349,
   "stop_point": "summary"
 }

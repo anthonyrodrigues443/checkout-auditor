@@ -3,8 +3,11 @@
 
 Usage: python stores/gen5.py
 Writes stores/www/l21 .. l24 (the served root) and stores/keys/l21.json .. l24.json (outside
-the served root). Only those four folders and four key files are touched; re-running overwrites
-them and nothing else (checked by comparing every other file's size and mtime before and after).
+the served root). Only those four folders and four key files are touched (checked by comparing
+every other file's size and mtime before and after). A re-run renders every file first and
+compares it with the disk: a store that matches byte for byte is left alone, and a store that
+would change while runs/ holds runs on its level is refused (CLAUDE.md M8: a level with runs is
+never edited). --force overrides that refusal, for use only after those runs are moved out.
 The page shell, the money helper, the order box and the base CSS come from stores/gen.py; the
 page builders, the script and the key builder live here because these stores have mechanics
 the earlier generators do not have.
@@ -41,6 +44,7 @@ sys.path.insert(0, str(ROOT))
 from gen import ADDRESS, BASE_URL, CONTACT, CSS, FORBIDDEN_WORDS, KEYS, WWW, check_neutral, money, order_box, page  # noqa: E402
 
 OWN_IDS = ["l21", "l22", "l23", "l24"]
+RUNS = ROOT.parent / "runs"
 
 EXTRA_FORBIDDEN = ["bait", "nag", "marathon", "trick", "decept", "deceiv", "manipul", "nudge", "vanish",
                    "collaps", "fold", "forced", "switch", "interstitial", "noisy"]
@@ -830,10 +834,10 @@ def build_key(s):
     }
 
 
-# ---------- freshness against every earlier store ----------
+# ---------- freshness against every other store ----------
 
 def store_marks(s):
-    """The per-store facts that must differ from every earlier store."""
+    """The per-store facts that must differ from every other store."""
     w, c = s["words"], s["colours"]
     return {
         "words": (w["cart"], w["add"], w["next"], w["pay"]),
@@ -852,18 +856,21 @@ def key_marks(key):
     return lines, types
 
 
-def earlier_stores():
-    """STORES of every earlier generator that imports cleanly; a generator mid-edit is skipped with a note."""
+def other_stores():
+    """STORES of every other gen*.py next to this file that imports cleanly; a generator mid-edit
+    is skipped with a note, so another builder's half-written file never blocks this one."""
     out = []
-    for name in ("gen", "gen2", "gen3", "gen4", "gen6"):
+    for f in sorted(ROOT.glob("gen*.py")):
+        if f.stem == Path(__file__).stem:
+            continue
         try:
-            out += list(__import__(name).STORES)
+            out += list(__import__(f.stem).STORES)
         except Exception as e:  # noqa: BLE001
-            print(f"note: could not import {name} for the freshness check: {type(e).__name__}: {e}")
+            print(f"note: could not import {f.stem} for the freshness check: {type(e).__name__}: {e}")
     return [s for s in out if s["id"] not in OWN_IDS]
 
 
-def earlier_keys():
+def other_keys():
     out = {}
     for f in sorted(KEYS.glob("l*.json")):
         k = json.loads(f.read_text(encoding="utf-8"))
@@ -872,10 +879,10 @@ def earlier_keys():
     return out
 
 
-def freshness_problems(new_stores, new_keys):
-    """Every overlap between a new store and an earlier one, or between two new stores."""
+def freshness_problems(new_stores, new_keys, others, others_keys):
+    """Every overlap between a new store and another one, or between two new stores."""
     out = []
-    seen = [(s["id"], store_marks(s)) for s in earlier_stores()]
+    seen = [(s["id"], store_marks(s)) for s in others]
     for s in new_stores:
         marks = store_marks(s)
         for kind, value in marks.items():
@@ -883,7 +890,7 @@ def freshness_problems(new_stores, new_keys):
                 if other[kind] == value:
                     out.append((kind, s["id"], other_id, value))
         seen.append((s["id"], marks))
-    seen_keys = [(sid, key_marks(k)) for sid, k in earlier_keys().items()]
+    seen_keys = [(sid, key_marks(k)) for sid, k in others_keys.items()]
     for s in new_stores:
         lines, types = key_marks(new_keys[s["id"]])
         for other_id, (other_lines, other_types) in seen_keys:
@@ -897,10 +904,22 @@ def freshness_problems(new_stores, new_keys):
 
 
 def check_fresh(new_stores, new_keys):
-    problems = freshness_problems(new_stores, new_keys)
-    if problems:
+    """An overlap with an earlier store, or between two of ours, stops the run. An overlap with a
+    later store is printed and does not: these pages are frozen once runs exist, so the later store
+    is the one to change, and its own generator's check is where that is enforced."""
+    others, others_keys = other_stores(), other_keys()
+    own_level = {s["id"]: s["level"] for s in new_stores}
+    level_of = {s["id"]: s["level"] for s in others}
+    level_of.update({sid: k["level"] for sid, k in others_keys.items()})
+    blocking, later = [], []
+    for kind, new, other, value in freshness_problems(new_stores, new_keys, others, others_keys):
+        line = f"  {kind}: {new} repeats {other}: {value!r}"
+        (later if level_of.get(other, 0) > own_level[new] else blocking).append(line)
+    if later:
+        print("note: later stores repeat ours (for their builders to change; these pages stay):\n" + "\n".join(later))
+    if blocking:
         raise SystemExit("stores repeat earlier ones (M1: different vocabulary, colours and traps per store):\n"
-                         + "\n".join(f"  {kind}: {new} repeats {other}: {value!r}" for kind, new, other, value in problems))
+                         + "\n".join(blocking))
 
 
 # ---------- main ----------
@@ -933,58 +952,112 @@ def other_files():
     return out
 
 
-def write_store(s):
+def render_store(s):
+    """Every file of the store as name -> text, in the order they are written."""
+    e = s["extras"]
+    index = product_page(s)
+    files = {"index.html": index, "cart.html": cart_page(s)}
+    if "warranty_page" in e:
+        files["warranty.html"] = warranty_page(s)
+    if "gift_page" in e:
+        files["gift.html"] = check_page(s, "gift", e["gift_page"], "gift-check", True, s["words"]["next"])
+    if "protection_page" in e:
+        files["protection.html"] = check_page(s, "protection", e["protection_page"], "protection-check", True,
+                                              s["words"]["next"])
+    if "wrap_page" in e:
+        files["wrap.html"] = check_page(s, "wrap", e["wrap_page"], "wrap-check", False, e["wrap_page"]["skip"])
+    if "address_page" in e:
+        files["address.html"] = address_page(s)
+    files["options.html"] = options_page(s)
+    files["summary.html"] = summary_page(s)
+    files["pay.html"] = pay_page(s)
+    files["app.js"] = app_js(s)
+    files["style.css"] = style_css(s)
+    written = sorted(n for n in files if n.endswith(".html"))
+    expected_pages = sorted(f"{p}.html" for p in s["pages"])
+    if written != expected_pages:
+        raise SystemExit(f"{s['id']}: rendered pages {written} differ from config {expected_pages}")
+    if "long_page" in e and visible_text_length(index) < 7000:
+        raise SystemExit(f"{s['id']}: product page text is {visible_text_length(index)} characters, needs 7000+")
+    return files
+
+
+def runs_on(s):
+    return sorted(RUNS.glob(f"*_L{s['level']}_r*.json")) if RUNS.exists() else []
+
+
+def changed_files(s, files):
+    """Names in files whose text differs from what is on disk for this store (missing counts),
+    plus any file on disk that the store no longer has (dotfiles ignored)."""
+    out = WWW / s["id"]
+    changed = sorted(name for name, text in files.items()
+                     if not (out / name).exists() or (out / name).read_text(encoding="utf-8") != text)
+    if out.exists():
+        changed += sorted(f"{p.name} (stray)" for p in out.iterdir()
+                          if p.name not in files and not p.name.startswith("."))
+    return changed
+
+
+def write_store(s, files):
     out = WWW / s["id"]
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    e = s["extras"]
-    index = product_page(s)
-    (out / "index.html").write_text(index, encoding="utf-8")
-    (out / "cart.html").write_text(cart_page(s), encoding="utf-8")
-    if "warranty_page" in e:
-        (out / "warranty.html").write_text(warranty_page(s), encoding="utf-8")
-    if "gift_page" in e:
-        (out / "gift.html").write_text(check_page(s, "gift", e["gift_page"], "gift-check", True, s["words"]["next"]),
-                                       encoding="utf-8")
-    if "protection_page" in e:
-        (out / "protection.html").write_text(
-            check_page(s, "protection", e["protection_page"], "protection-check", True, s["words"]["next"]), encoding="utf-8")
-    if "wrap_page" in e:
-        (out / "wrap.html").write_text(check_page(s, "wrap", e["wrap_page"], "wrap-check", False, e["wrap_page"]["skip"]),
-                                       encoding="utf-8")
-    if "address_page" in e:
-        (out / "address.html").write_text(address_page(s), encoding="utf-8")
-    (out / "options.html").write_text(options_page(s), encoding="utf-8")
-    (out / "summary.html").write_text(summary_page(s), encoding="utf-8")
-    (out / "pay.html").write_text(pay_page(s), encoding="utf-8")
-    (out / "app.js").write_text(app_js(s), encoding="utf-8")
-    (out / "style.css").write_text(style_css(s), encoding="utf-8")
-    written = sorted(f.name for f in out.glob("*.html"))
-    expected_pages = sorted(f"{p}.html" for p in s["pages"])
-    if written != expected_pages:
-        raise SystemExit(f"{s['id']}: pages on disk {written} differ from config {expected_pages}")
-    if "long_page" in e and visible_text_length(index) < 7000:
-        raise SystemExit(f"{s['id']}: product page text is {visible_text_length(index)} characters, needs 7000+")
+    for name, text in files.items():
+        (out / name).write_text(text, encoding="utf-8")
     check_neutral(out)
     check_neutral_extra(out)
     return out
 
 
-def main():
+def main(argv=None):
+    force = "--force" in (sys.argv[1:] if argv is None else argv)
     KEYS.mkdir(parents=True, exist_ok=True)
     keys = {s["id"]: build_key(s) for s in STORES}
     assert sorted(keys) == OWN_IDS, sorted(keys)
     check_fresh(STORES, keys)
-    before = other_files()
+    rendered = {s["id"]: render_store(s) for s in STORES}
+    key_texts = {sid: json.dumps(k, ensure_ascii=False, indent=2) + "\n" for sid, k in keys.items()}
+
+    changes, blocked = {}, []
     for s in STORES:
-        out = write_store(s)
+        changed = changed_files(s, rendered[s["id"]])
+        key_path = KEYS / f"{s['id']}.json"
+        if not key_path.exists() or key_path.read_text(encoding="utf-8") != key_texts[s["id"]]:
+            changed.append(key_path.name)
+        changes[s["id"]] = changed
+        runs = runs_on(s)
+        if changed and runs:
+            blocked.append(f"  {s['id']}: {', '.join(changed)} would change and {len(runs)} run(s) exist on it")
+    if blocked and not force:
+        raise SystemExit("refusing to rewrite a store that already has runs (CLAUDE.md M8, section 6):\n"
+                         + "\n".join(blocked) + "\n  re-run with --force only after moving those runs out of runs/")
+    if blocked:
+        print("--force: rewriting stores with runs; those runs are now invalid:\n" + "\n".join(blocked))
+
+    before = other_files()
+    written = []
+    for s in STORES:
         key = keys[s["id"]]
-        (KEYS / f"{s['id']}.json").write_text(json.dumps(key, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        out = WWW / s["id"]
+        if not changes[s["id"]]:
+            # byte-identical to disk: leave the folder alone (a delete-and-rewrite would blank the
+            # store for a moment under a live runner); the neutral-word checks still run over it
+            check_neutral(out)
+            check_neutral_extra(out)
+            print(f"{s['id']} {s['name']}: unchanged, {len(s['pages'])} pages, "
+                  f"expected_final_total={key['expected_final_total']} -> {out}")
+            continue
+        out = write_store(s, rendered[s["id"]])
+        (KEYS / f"{s['id']}.json").write_text(key_texts[s["id"]], encoding="utf-8")
+        written.append(s["id"])
         print(f"{s['id']} {s['name']}: {len(s['pages'])} pages, expected_final_total={key['expected_final_total']} -> {out}")
     if other_files() != before:
         raise SystemExit("a file outside l21-l24 changed while gen5.py ran")
-    print(f"wrote {', '.join(OWN_IDS)} under {WWW} and {KEYS}; nothing else was touched")
+    if written:
+        print(f"wrote {', '.join(written)} under {WWW} and {KEYS}; nothing else was touched")
+    else:
+        print(f"{', '.join(OWN_IDS)} matched the disk byte for byte; nothing under {WWW} or {KEYS} was touched")
 
 
 if __name__ == "__main__":

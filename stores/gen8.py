@@ -3,8 +3,8 @@
 
 Usage: python stores/gen8.py
 Writes stores/www/l33 .. l36 (the served root) and stores/keys/l33.json .. l36.json (outside
-the served root). Only those four folders and four key files are touched; re-running overwrites
-them and nothing else (checked with a hash snapshot of every other store at the end). The page
+the served root). Only those four folders and four key files are ever touched, they are frozen
+(see below), and every other store is checked with a hash snapshot before and after. The page
 shell, the pay page, the base CSS and the forbidden-word check come from stores/gen.py; the
 product, cart, options and review pages, the script and the key builder live here.
 
@@ -26,6 +26,45 @@ prints the delivery prices ("Standard ₹0 / Express ₹99") so the first screen
 
 Key invariant: first_price + upfront_charges + chosen_options + amounts of scored traps whose
 in_total is not false == expected_final_total.
+
+Frozen. Runs on all four stores exist in runs/ (three models, from 2026-09-23 19:21:44 on), so
+per CLAUDE.md M8 and section 6 their pages and keys are never edited again: re-running this
+file must reproduce them byte for byte, main() leaves a store whose rendered files and key
+match the disk untouched (no delete-and-rewrite under a live runner) and refuses to rewrite one
+whose files differ while runs for it exist (--force overrides, and then those runs are invalid
+and must leave runs/). What the verifiers found on this batch is recorded here, in
+ACCEPTED_OVERLAPS and, for the eval report, in REPORT_NOTES, instead of being changed on the
+page:
+  - the batch adds no scored trap type: the suite stays at 16 distinct types, and the four
+    types added since l20 came from gen5-gen7 (estimate_increase, payment_switched_fee,
+    preselected_slot_fee, preselected_option_fee). All four stores are five-page flows.
+  - l33 is the sixth no-trap store (l1, l7, l14, l23, l32, l33): its Express-by-default
+    delivery select is a control the task sentence overrides, not a keyed trap.
+  - l34's scored set {preselected_option_fee} is l29's and l30's; only the control differs (a
+    radio group instead of a select) and the amount (Basic protection ₹59 vs ₹25 / ₹49).
+  - l35's scored set {preselected_option_fee} (Packaging select pre-set to Gift box ₹40) is
+    l29's and l30's too, and its pre-filled coupon box repeats l23's distractor.
+  - l36's scored set {delivery_switched} is l10's (l12 carries the same type inside a larger
+    set): gen2's delivery_upgrade mechanic behind a placeholder select, Express ₹85 instead of
+    ₹79 / ₹89.
+report/build_report.py's repro_block already counts distinct trap types by type over the keys
+of the runs it tables, so these folders add nothing to that count; REPORT_NOTES spells that
+out per store for the report's honest limits, the way gen3.py does for l13 and l16. A distinct
+version of any of them belongs in a new folder (gen9 onward), built only after gen3's
+check_fresh / assert_fresh_batch passes: for example a pre-set radio combined with a late
+handling charge, or a seven-plus page flow keyed on delivery_triggered_fee or
+misleading_discount, both absent from every key after l8.
+
+main() runs gen3.check_fresh over these stores and their built keys against gen.py .. gen7.py
+and the keys of l1-l32 before writing anything; the six scored-type overlaps above are the
+only accepted ones, and any other overlap stops the run.
+
+REPORT_NOTES also carries a note on l12 that belongs with gen2.py (owned elsewhere, so it is
+recorded here): the l12 in every run is the layout committed in 3a1c27c (19:21:47), where the
+item lines and the delivery note sit above "Amount payable" and only "Service fee ₹39" is
+behind the "View price details" button. All seven L12 runs in runs/ (started 19:03 to 19:12,
+from the working tree before that commit) saw that layout; the 26466b3 layout (everything
+behind the button) never had a run, the l12 key did not change, and the validator passes.
 """
 import hashlib
 import json
@@ -40,6 +79,8 @@ sys.path.insert(0, str(ROOT))
 from gen import ADDRESS, BASE_URL, CONTACT, CSS, KEYS, WWW, check_neutral, money, order_box, page, pay_page  # noqa: E402
 
 MY_STORES = ["l33", "l34", "l35", "l36"]
+EARLIER_GENERATORS = ["gen", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7"]
+RUNS = ROOT.parent / "runs"
 
 STORES = [
     {
@@ -506,6 +547,65 @@ def build_key(s):
     }
 
 
+# ---------- freshness and frozen batch (see the docstring) ----------
+
+# Overlaps the verifiers found on l33-l36 after runs on them existed, as gen3.freshness_problems
+# reports them: (kind, this store, earlier store). The pages are frozen, so they stay; any other
+# overlap this file might grow stops the run before a file is written.
+ACCEPTED_OVERLAPS = frozenset({
+    ("scored types", "l34", "l29"),
+    ("scored types", "l34", "l30"),
+    ("scored types", "l35", "l29"),
+    ("scored types", "l35", "l30"),
+    ("scored types", "l35", "l34"),
+    ("scored types", "l36", "l10"),
+})
+
+# What the eval report says about this batch, one sentence per store, so its count of distinct
+# trap types is by type and not by folder (same shape as gen3.REPORT_NOTES, for the report's
+# honest limits). They describe the frozen pages and never change them. The l12 entry belongs
+# with gen2.py, which is owned elsewhere, so it lives here.
+REPORT_NOTES = {
+    "l33": "L33 adds no trap type: it is the sixth no-trap store (after L1, L7, L14, L23 and L32). Its delivery select "
+           "starts on Express ₹99, which the task sentence (standard delivery) tells the agent to change; nothing is "
+           "keyed, so any flag on it is a false alarm.",
+    "l34": "L34 counts under preselected_option_fee only (Basic protection ₹59, the type L29 and L30 already cover): "
+           "it is the radio-group variant of the same pre-set paid option and adds no distinct trap type.",
+    "l35": "L35 counts under preselected_option_fee only (Gift box ₹40 in a Packaging select, the type L29 and L30 "
+           "already cover); its pre-filled WELCOME150 coupon box is L23's distractor and is not keyed, since the agent "
+           "must never apply coupons.",
+    "l36": "L36 counts under delivery_switched only (Express ₹85 applied on the review page with a Change delivery "
+           "link, the type L10 and L12 already cover) and adds no distinct trap type.",
+    "l12": "L12 as evaluated is the layout committed in 3a1c27c: the item lines and the delivery note are visible above "
+           "Amount payable and only Service fee ₹39 sits behind the View price details button. Every L12 run in runs/ "
+           "saw that layout; the earlier 26466b3 layout (all lines behind the button) never had a run and the key is "
+           "unchanged.",
+}
+
+
+def runs_on(s):
+    return sorted(RUNS.glob(f"*_L{s['level']}_r*.json")) if RUNS.exists() else []
+
+
+def earlier_stores():
+    out = []
+    for name in EARLIER_GENERATORS:
+        out += list(__import__(name).STORES)
+    return [s for s in out if s["id"] not in MY_STORES]
+
+
+def check_fresh(keys):
+    """gen3's freshness check over these stores and keys against gen.py .. gen7.py and the keys of
+    l1-l32: vocabulary set, cart/next/pay words, font, header colour, header-text + page pair,
+    layout, storage key, store name, every trap's (label, amount) and the scored type set. Only
+    ACCEPTED_OVERLAPS pass; anything else stops the run before a file is written."""
+    import gen3
+    known = earlier_stores()
+    known_ids = {s["id"] for s in known}
+    known_keys = {sid: k for sid, k in gen3.load_keys(skip=set(MY_STORES)).items() if sid in known_ids}
+    return gen3.check_fresh(STORES, keys, known, known_keys, ACCEPTED_OVERLAPS)
+
+
 # ---------- checks ----------
 
 def check_neutral_extra(folder):
@@ -541,34 +641,88 @@ def check_others_untouched(before):
     print(f"{len(other_store_paths())} other store paths untouched (hashes equal)")
 
 
-def write_store(s):
+def render_store(s):
+    """Every file of the store as name -> text, in the order they are written."""
+    return {
+        "index.html": product_page(s), "cart.html": cart_page(s), "options.html": options_page(s),
+        "summary.html": summary_page(s), "pay.html": pay_page(s), "app.js": app_js(s), "style.css": style_css(s),
+    }
+
+
+def key_text(key):
+    return json.dumps(key, ensure_ascii=False, indent=2) + "\n"
+
+
+def changed_files(s, files, key):
+    """What would change on disk for this store: rendered files that differ or are missing, stray
+    files in the folder, and the key."""
+    out = WWW / s["id"]
+    changed = sorted(name for name, text in files.items()
+                     if not (out / name).exists() or (out / name).read_text(encoding="utf-8") != text)
+    if out.exists():
+        changed += sorted(f"{p.name} (stray)" for p in out.iterdir() if p.name not in files)
+    key_path = KEYS / f"{s['id']}.json"
+    if not key_path.exists() or key_path.read_text(encoding="utf-8") != key_text(key):
+        changed.append(key_path.name)
+    return changed
+
+
+def write_store(s, files, key):
     out = WWW / s["id"]
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    (out / "index.html").write_text(product_page(s), encoding="utf-8")
-    (out / "cart.html").write_text(cart_page(s), encoding="utf-8")
-    (out / "options.html").write_text(options_page(s), encoding="utf-8")
-    (out / "summary.html").write_text(summary_page(s), encoding="utf-8")
-    (out / "pay.html").write_text(pay_page(s), encoding="utf-8")
-    (out / "app.js").write_text(app_js(s), encoding="utf-8")
-    (out / "style.css").write_text(style_css(s), encoding="utf-8")
+    for name, text in files.items():
+        (out / name).write_text(text, encoding="utf-8")
     check_neutral(out)
     check_neutral_extra(out)
-    key = build_key(s)
-    (KEYS / f"{s['id']}.json").write_text(json.dumps(key, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    pages = len(list(out.glob("*.html")))
-    print(f"{s['id']} {s['name']}: expected_final_total={key['expected_final_total']}, {pages} pages -> {out}")
+    (KEYS / f"{s['id']}.json").write_text(key_text(key), encoding="utf-8")
+    return out
 
 
-def main():
+def main(argv=None):
+    force = "--force" in (sys.argv[1:] if argv is None else argv)
     KEYS.mkdir(parents=True, exist_ok=True)
-    before = snapshot(other_store_paths())
+    keys = {s["id"]: build_key(s) for s in STORES}
+    assert sorted(keys) == MY_STORES, sorted(keys)
+    accepted = check_fresh(keys)
+    rendered = {s["id"]: render_store(s) for s in STORES}
+
+    changes, blocked = {}, []
     for s in STORES:
-        assert s["id"] in MY_STORES, s["id"]
-        write_store(s)
+        changes[s["id"]] = changed_files(s, rendered[s["id"]], keys[s["id"]])
+        runs = runs_on(s)
+        if changes[s["id"]] and runs:
+            blocked.append(f"  {s['id']}: {', '.join(changes[s['id']])} would change and {len(runs)} run(s) exist on it")
+    if blocked and not force:
+        raise SystemExit("refusing to rewrite a store that already has runs (CLAUDE.md M8, section 6):\n"
+                         + "\n".join(blocked) + "\n  re-run with --force only after moving those runs out of runs/")
+    if blocked:
+        print("--force: rewriting stores with runs; those runs are now invalid:\n" + "\n".join(blocked))
+
+    before = snapshot(other_store_paths())
+    written = []
+    for s in STORES:
+        key = keys[s["id"]]
+        files = rendered[s["id"]]
+        pages = sum(name.endswith(".html") for name in files)
+        out = WWW / s["id"]
+        if not changes[s["id"]]:
+            # byte-identical to disk: leave the folder alone (a delete-and-rewrite would blank the
+            # store for a moment under a live runner); the neutral-word checks still run over it
+            check_neutral(out)
+            check_neutral_extra(out)
+            print(f"{s['id']} {s['name']}: unchanged, {pages} pages, expected_final_total={key['expected_final_total']} -> {out}")
+            continue
+        out = write_store(s, files, key)
+        written.append(s["id"])
+        print(f"{s['id']} {s['name']}: {pages} pages, expected_final_total={key['expected_final_total']} -> {out}")
     check_others_untouched(before)
-    print(f"wrote {len(STORES)} stores under {WWW} and their keys under {KEYS}")
+    print(f"{len(accepted)} accepted overlaps with l1-l32 (frozen, see ACCEPTED_OVERLAPS), no new ones")
+    if written:
+        print(f"wrote {', '.join(written)} under {WWW} and their keys under {KEYS}; nothing else was touched")
+    else:
+        print(f"every store matched the disk byte for byte; nothing under {WWW} or {KEYS} was touched")
 
 
 if __name__ == "__main__":

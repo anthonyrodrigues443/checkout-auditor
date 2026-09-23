@@ -24,7 +24,7 @@ select { font-size: 15px; padding: 4px; }
 h1 { font-size: 18px; margin: 6px 0; }
 .line { padding: 2px 0; border-bottom: 1px dotted #9cb; }
 .line.total { font-size: 15px; }
-.order-box, .price-lines { padding: 6px 10px; margin: 6px 0; border-color: #9cb; }
+.order-box, .price-lines, .offer-row { padding: 6px 10px; margin: 6px 0; border-color: #9cb; }
 .address { padding: 6px 10px; margin: 6px 0; font-size: 13px; }
 .content > p { margin: 6px 0; }
 button { padding: 6px 12px; font-size: 14px; }
@@ -33,4 +33,6 @@ select { font-size: 13px; padding: 2px; }
 .product-image { padding: 40px 10px; margin: 0; }
 .facts { margin: 8px 0 12px; padding-left: 20px; color: #444; }
 .facts li { margin: 2px 0; }
+.slot-choice, .offer-row { background: #fff; border: 1px solid #ccc; padding: 8px 14px; margin: 12px 0; }
+.slot-choice p { margin: 6px 0; }
 
