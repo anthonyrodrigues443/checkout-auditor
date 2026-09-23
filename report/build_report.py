@@ -277,32 +277,35 @@ def repro_block(prod: list[dict], levels: list) -> dict:
         cells[(r["model"], str(r["level"]))] += 1
     return {
         "models": sorted({r["model"] for r in prod}),
+        "credential_modes": sorted({r.get("mode") for r in prod}),
         "max_turns": settings.get("max_turns"), "max_budget_usd": settings.get("max_budget_usd"),
         "effort": settings.get("effort"), "thinking": settings.get("thinking"),
         "prompt_version": settings.get("prompt_version"), "prompt_commit": settings.get("prompt_commit"),
         "sdk": settings.get("sdk"), "date": datetime.now().strftime("%Y-%m-%d"),
         "stores": len(stores), "trap_types": len(trap_types), "trap_type_names": sorted(trap_types),
         "runs_per_cell": sorted(set(cells.values())) if cells else [],
-        "command": "AUDITOR_MODE=prod .venv/bin/python -m runner.run --models " + " ".join(sorted({r['model'] for r in prod})) + " --levels " + " ".join(levels) + " --repeats 1 && .venv/bin/python -m report.build_report",
+        "command": f"AUDITOR_MODE={'prod' if all(r.get('mode') == 'prod' for r in prod) else 'test'} .venv/bin/python -m runner.run{'' if all(r.get('mode') == 'prod' for r in prod) else ' --eval --force'} --models " + " ".join(sorted({r['model'] for r in prod})) + " --levels " + " ".join(levels) + " --repeats 1 && .venv/bin/python -m report.build_report",
     }
 
+
+EVAL_MODES = ("prod", "cli")  # prod = API key; cli = deliberate comparison runs over the Claude Code login. test = debug, excluded.
 
 LIMITS = [
     "Stores are seeded test stores served locally, not live shops; results say how the agent behaves on these traps, not on the open web.",
     "The agent has no typing tool, so flows that need an address or login typed in are out of scope.",
     "A single run per cell is one observation, not a rate; repeats are shown as k/n and are only meaningful where n > 1.",
     "Findings depend on what the model reports at each checkpoint; Python does the sums, the model does the reading.",
-    "Test-mode runs (subscription credentials, used for debugging) are excluded from the comparison.",
+    "Debug runs (mode test) are excluded from the comparison; runs stamped cli went through the Claude Code login rather than the API key and are labelled in the reproducibility block.",
 ]
 
 
 def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
-    prod = [r for r in runs if r.get("mode") == "prod"]
-    test = [r for r in runs if r.get("mode") != "prod"]
+    prod = [r for r in runs if r.get("mode") in EVAL_MODES]
+    test = [r for r in runs if r.get("mode") not in EVAL_MODES]
     rows, per_level, levels = comparison_rows(prod)
     repro = repro_block(prod, levels)
     n_stores = repro["stores"]
-    parts = [f"<h1>Checkout Auditor · internal eval</h1><div class='muted'>generated {datetime.now().isoformat(timespec='seconds')} · {len(runs)} run records ({len(prod)} prod, {len(test)} test-mode excluded)</div>"]
+    parts = [f"<h1>Checkout Auditor · internal eval</h1><div class='muted'>generated {datetime.now().isoformat(timespec='seconds')} · {len(runs)} run records ({len(prod)} in the table, {len(test)} debug runs excluded)</div>"]
     parts.append(f"<h2>Offline eval on {n_stores} seeded stores</h2>")
     parts.append("<table><tr><th>model</th><th>runs</th><th>highest level cleared</th><th>caught/seeded</th><th>false alarms on L1</th><th>stopped at Pay</th><th>completed</th><th>avg steps</th><th>avg seconds</th><th>avg cost $</th></tr>")
     for r in rows:
@@ -327,7 +330,7 @@ def build_index(runs: list[dict], audit_pages: dict[str, Path]) -> None:
         parts.append("</details>")
     (OUT_DIR / "index.html").write_text(f"<!doctype html><meta charset='utf-8'><title>Checkout Auditor eval</title><style>{CSS}</style>" + "".join(parts))
 
-    md = [f"# Offline eval on {n_stores} seeded stores", "", f"Generated {datetime.now().isoformat(timespec='seconds')} from {len(prod)} prod runs (test-mode runs excluded).", "",
+    md = [f"# Offline eval on {n_stores} seeded stores", "", f"Generated {datetime.now().isoformat(timespec='seconds')} from {len(prod)} prod runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).", "",
           "| model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |",
           "|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
@@ -343,8 +346,8 @@ def main() -> int:
     runs = [enrich(r) for r in load_runs()]
     pages = build_audit_pages(runs)
     build_index(runs, pages)
-    prod = sum(1 for r in runs if r.get("mode") == "prod")
-    print(f"report: {len(runs)} runs ({prod} prod) → report/index.html, report/eval.md, {len(pages)} audit page(s)")
+    prod = sum(1 for r in runs if r.get("mode") in EVAL_MODES)
+    print(f"report: {len(runs)} runs ({prod} in the eval table) → report/index.html, report/eval.md, {len(pages)} audit page(s)")
     return 0
 
 

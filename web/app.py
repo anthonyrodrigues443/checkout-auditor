@@ -299,7 +299,7 @@ def default_pairs() -> list[dict]:
     pairs = []
     for store in sorted(by_store, key=lambda s: (len(s), s)):
         rs = by_store[store]
-        prod = [r for r in rs if r.get("mode") == "prod"]
+        prod = [r for r in rs if r.get("mode") in ("prod", "cli")]
         pool = prod or rs
         latest: dict[str, dict] = {}
         for r in sorted(pool, key=lambda r: r.get("started_at", "")):
@@ -678,7 +678,7 @@ async def api_run_detail(run_id: str):
 @app.get("/api/eval")
 async def api_eval():
     rs = all_runs_enriched()
-    prod = [r for r in rs if r.get("mode") == "prod"]
+    prod = [r for r in rs if r.get("mode") in ("prod", "cli")]
     rows, per_level, levels = comparison_rows(prod)
     return {"title": f"Offline eval on {repro_block(prod, levels)['stores']} seeded stores", "rows": rows,
             "per_level": {m: {lv: {"cleared": c[0], "runs": c[1]} for lv, c in cell.items()} for m, cell in per_level.items()},

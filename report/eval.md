@@ -1,6 +1,6 @@
 # Offline eval on 0 seeded stores
 
-Generated 2026-09-23T18:25:03 from 0 prod runs (test-mode runs excluded).
+Generated 2026-09-23T18:26:35 from 0 prod runs (debug test-mode runs excluded; credential modes in the reproducibility block: prod = API key, cli = Claude Code login).
 
 | model | runs | highest level cleared | caught/seeded | false alarms on L1 | stopped at Pay | completed | avg steps | avg seconds | avg cost $ |
 |---|---|---|---|---|---|---|---|---|---|
@@ -15,6 +15,7 @@ Generated 2026-09-23T18:25:03 from 0 prod runs (test-mode runs excluded).
 ```json
 {
  "models": [],
+ "credential_modes": [],
  "max_turns": null,
  "max_budget_usd": null,
  "effort": null,
@@ -37,4 +38,4 @@ Generated 2026-09-23T18:25:03 from 0 prod runs (test-mode runs excluded).
 - The agent has no typing tool, so flows that need an address or login typed in are out of scope.
 - A single run per cell is one observation, not a rate; repeats are shown as k/n and are only meaningful where n > 1.
 - Findings depend on what the model reports at each checkpoint; Python does the sums, the model does the reading.
-- Test-mode runs (subscription credentials, used for debugging) are excluded from the comparison.
+- Debug runs (mode test) are excluded from the comparison; runs stamped cli went through the Claude Code login rather than the API key and are labelled in the reproducibility block.

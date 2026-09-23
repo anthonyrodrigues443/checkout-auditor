@@ -52,8 +52,11 @@ def fmt_row(r: dict) -> str:
 
 async def main(a: argparse.Namespace) -> int:
     mode = get_mode()
-    if mode == "test" and len(a.models) > 1 and not a.force:
+    if mode == "test" and len(a.models or []) > 1 and not a.force:
         raise SystemExit("refusing a multi-model comparison in test mode (subscription runs are not comparable); use --force")
+    if a.eval and mode == "test":
+        mode = "cli"
+        print("comparison runs over the Claude Code login: stamping mode=cli (included in the eval table, labelled)")
     sdk_env = sdk_env_for_mode(mode)
     models = a.models or [TEST_DEFAULT_MODEL if mode == "test" else "claude-fable-5-1"]
     submission = a.submission or datetime.now().strftime("%Y%m%d-%H%M%S") + "_" + "+".join(m.replace("claude-", "") for m in models)
@@ -150,6 +153,7 @@ def parse(argv=None) -> argparse.Namespace:
     ap.add_argument("--screen-width", type=int, default=1440)
     ap.add_argument("--screen-height", type=int, default=820)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--eval", action="store_true", help="comparison intent: in test mode (with --force) runs are stamped mode=cli and enter the eval table")
     a = ap.parse_args(argv)
     if os.environ.get("AUDITOR_HEADED") == "1":
         a.headed = True

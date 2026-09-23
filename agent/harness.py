@@ -38,8 +38,8 @@ RUN_TIMEOUT_S = 600
 
 def get_mode() -> str:
     mode = os.environ.get("AUDITOR_MODE", "test").strip().lower()
-    if mode not in ("test", "prod"):
-        raise SystemExit(f"AUDITOR_MODE must be test or prod, got {mode!r}")
+    if mode not in ("test", "prod", "cli"):
+        raise SystemExit(f"AUDITOR_MODE must be test, prod or cli, got {mode!r}")
     return mode
 
 
@@ -58,7 +58,10 @@ def load_prod_key() -> str:
 
 
 def sdk_env_for_mode(mode: str) -> dict[str, str]:
-    """Env passed to the SDK subprocess. test: no key at all (Claude Code login). prod: key from .env."""
+    """Env passed to the SDK subprocess. test/cli: no key at all (Claude Code login). prod: key from .env.
+
+    cli = comparison runs made deliberately over the Claude Code login; they enter the eval table labelled as such.
+    test = debugging runs; never in the table."""
     if mode == "prod":
         return {"ANTHROPIC_API_KEY": load_prod_key()}
     os.environ.pop("ANTHROPIC_API_KEY", None)
