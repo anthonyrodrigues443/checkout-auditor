@@ -139,19 +139,21 @@ function renderComparison(ev) {
   const head = `<tr><th>model</th><th>runs</th><th>highest cleared</th><th>caught/seeded</th>
     <th>false alarms L1</th><th>stopped at Pay</th><th>completed</th><th>avg steps</th><th>avg s</th><th>avg $</th>
     ${levels.map((l) => `<th>L${esc(l)}</th>`).join('')}</tr>`;
+  // Key names come straight from comparison_rows in report/build_report.py: highest, fa_l1,
+  // stopped and completed already arrive as display strings ("8/8", "0 (n=1)").
   const body = ev.rows.map((r) => {
     const per = (ev.per_level || {})[r.model] || {};
     return `<tr>
       <td>${esc(r.model)}</td>
-      <td>${r.runs}</td>
-      <td>${r.highest_level_cleared || '—'}</td>
-      <td>${r.caught}/${r.seeded}</td>
-      <td>${r.false_alarms_l1}${r.false_alarms_l1_n ? ` <span class="muted">(n=${r.false_alarms_l1_n})</span>` : ''}</td>
-      <td>${r.stopped_at_pay}/${r.runs}</td>
-      <td>${r.completed}/${r.runs}</td>
-      <td>${r.avg_steps}</td>
-      <td>${r.avg_seconds}</td>
-      <td>${(r.avg_cost_usd ?? 0).toFixed(3)}</td>
+      <td>${esc(r.runs)}</td>
+      <td>${esc(r.highest)}</td>
+      <td>${esc(r.caught)}/${esc(r.seeded)}</td>
+      <td>${esc(r.fa_l1)}</td>
+      <td>${esc(r.stopped)}</td>
+      <td>${esc(r.completed)}</td>
+      <td>${esc(r.steps)}</td>
+      <td>${esc(r.seconds)}</td>
+      <td>${esc(r.cost)}</td>
       ${levels.map((l) => {
         const c = per[String(l)] || per[l] || { cleared: 0, runs: 0 };
         const cls = !c.runs ? 'muted' : c.cleared === c.runs ? 'pass' : 'fail';

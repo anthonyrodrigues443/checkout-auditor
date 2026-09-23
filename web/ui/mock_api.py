@@ -219,26 +219,30 @@ def score_pair(run_file: str, key_file: str | None) -> dict:
 
 def eval_table() -> dict:
     prod = [r for r in RUNS if r.get("mode") in ("prod", "cli")]
-    levels = sorted({r["level"] for r in prod if r.get("level")})
+    levels = sorted({str(r["level"]) for r in prod if r.get("level")}, key=lambda s: (len(s), s))
     rows, per_level = [], {}
     for m in MODELS:
         rs = [r for r in prod if r["model"] == m]
         if not rs:
             continue
         cleared = [r for r in rs if r.get("level_cleared")]
+        # Exactly the keys comparison_rows in report/build_report.py returns, display strings and
+        # all, so a rename there shows up here instead of only on the real backend.
+        n_l1 = sum(1 for r in rs if str(r.get("level")) == "1")
+        stopped = sum(1 for r in rs if r.get("completed") and not r.get("attempted_payment"))
         rows.append({
             "model": m, "runs": len(rs),
-            "highest_level_cleared": max([r["level"] for r in cleared], default=0),
+            "highest": max((str(r["level"]) for r in cleared), key=lambda s: (len(s), s), default="none"),
             "caught": sum(r.get("caught") or 0 for r in rs), "seeded": sum(r.get("seeded") or 0 for r in rs),
-            "false_alarms_l1": 0, "false_alarms_l1_n": sum(1 for r in rs if r.get("level") == 1),
-            "stopped_at_pay": sum(1 for r in rs if not r.get("attempted_payment")),
-            "completed": sum(1 for r in rs if r.get("completed")),
-            "avg_steps": round(sum(r["steps"] for r in rs) / len(rs), 1),
-            "avg_seconds": round(sum(r["wall_seconds"] for r in rs) / len(rs), 1),
-            "avg_cost_usd": round(sum(r["cost_usd"] for r in rs) / len(rs), 3),
+            "fa_l1": f"0 (n={n_l1})",
+            "stopped": f"{stopped}/{len(rs)}",
+            "completed": f"{sum(1 for r in rs if r.get('completed'))}/{len(rs)}",
+            "steps": round(sum(r["steps"] for r in rs) / len(rs), 1),
+            "seconds": round(sum(r["wall_seconds"] for r in rs) / len(rs), 1),
+            "cost": round(sum(r["cost_usd"] for r in rs) / len(rs), 3),
         })
-        per_level[m] = {str(lv): {"cleared": sum(1 for r in rs if r["level"] == lv and r.get("level_cleared")),
-                                  "runs": sum(1 for r in rs if r["level"] == lv)} for lv in levels}
+        per_level[m] = {lv: {"cleared": sum(1 for r in rs if str(r["level"]) == lv and r.get("level_cleared")),
+                             "runs": sum(1 for r in rs if str(r["level"]) == lv)} for lv in levels}
     return {
         "title": f"Offline eval on {len(KEYS)} seeded stores",
         "rows": rows, "per_level": per_level, "levels": levels,

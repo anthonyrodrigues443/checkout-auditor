@@ -12,37 +12,68 @@ let currentSub = null;
 /** store_id -> shop name, so a task reads "Kirana Direct" rather than "L1" twice. */
 const storeNames = new Map();
 
-/* ---- task rows ---- */
+/* ---- stores and their tasks ----
+   One store owns one URL and any number of task sentences. Adding a task adds a task only; the
+   URL is asked for once per store. The backend still wants a flat list of {url, task, headed},
+   so readRows() multiplies the store's URL across its tasks. */
 
-function addRow(url = '', task = '', headed = false) {
-  const i = ++rowSeq;
+function addStore(url = '', tasks = [''], headedOn = -1) {
   const div = document.createElement('div');
-  div.className = 'row';
-  div.dataset.row = i;
+  div.className = 'store';
+  div.dataset.store = ++rowSeq;
   div.innerHTML = `
-    <span class="n">${$$('#rows .row').length + 1}</span>
-    <input type="text" class="url" placeholder="http://localhost:8000/l3/" value="${esc(url)}" aria-label="Store URL">
-    <input type="text" class="task" placeholder="Buy one blue ceramic mug with standard delivery." value="${esc(task)}" aria-label="Task">
-    <label class="check"><input type="checkbox" class="headed" ${headed ? 'checked' : ''}> show browser</label>
-    <button class="ghost icon remove" type="button" title="Remove this task" aria-label="Remove task">×</button>`;
-  div.querySelector('.remove').addEventListener('click', () => { div.remove(); renumber(); });
-  $('#rows').appendChild(div);
+    <div class="store-head">
+      <span class="n"></span>
+      <input type="text" class="url" placeholder="http://localhost:8000/l3/" value="${esc(url)}" aria-label="Store URL">
+      <button class="ghost icon remove-store" type="button" title="Remove this store" aria-label="Remove store">×</button>
+    </div>
+    <div class="tasks"></div>
+    <button class="ghost small add-task" type="button">+ Add task</button>`;
+
+  div.querySelector('.remove-store').addEventListener('click', () => { div.remove(); renumber(); updateNote(); });
+  div.querySelector('.add-task').addEventListener('click', () => { addTask(div); updateNote(); });
+  $('#stores').appendChild(div);
+  (tasks.length ? tasks : ['']).forEach((t, i) => addTask(div, t, i === headedOn));
+  renumber();
   return div;
 }
 
+function addTask(store, task = '', headed = false) {
+  const div = document.createElement('div');
+  div.className = 'taskrow';
+  div.innerHTML = `
+    <span class="n"></span>
+    <input type="text" class="task" placeholder="Buy one blue ceramic mug with standard delivery." value="${esc(task)}" aria-label="Task">
+    <label class="check"><input type="checkbox" class="headed" ${headed ? 'checked' : ''}> show browser</label>
+    <button class="ghost icon remove-task" type="button" title="Remove this task" aria-label="Remove task">×</button>`;
+  div.querySelector('.remove-task').addEventListener('click', () => { div.remove(); renumber(); updateNote(); });
+  store.querySelector('.tasks').appendChild(div);
+  renumber();
+  return div;
+}
+
+/** Stores are lettered, tasks numbered within a store, so "B2" names one run on screen. */
 function renumber() {
-  $$('#rows .row').forEach((r, i) => { r.querySelector('.n').textContent = i + 1; });
-  if (!$$('#rows .row').length) addRow();
+  const stores = $$('#stores .store');
+  stores.forEach((s, i) => {
+    s.querySelector('.store-head .n').textContent = stores.length > 1 ? String.fromCharCode(65 + i) : '';
+    if (!s.querySelectorAll('.taskrow').length) addTask(s);
+    s.querySelectorAll('.taskrow .n').forEach((n, j) => { n.textContent = j + 1; });
+  });
+  if (!stores.length) addStore();
 }
 
 function readRows() {
-  return $$('#rows .row')
-    .map((r) => ({
-      url: r.querySelector('.url').value.trim(),
-      task: r.querySelector('.task').value.trim(),
-      headed: r.querySelector('.headed').checked,
-    }))
-    .filter((r) => r.url && r.task);
+  const out = [];
+  $$('#stores .store').forEach((s) => {
+    const url = s.querySelector('.url').value.trim();
+    if (!url) return;
+    s.querySelectorAll('.taskrow').forEach((t) => {
+      const task = t.querySelector('.task').value.trim();
+      if (task) out.push({ url, task, headed: t.querySelector('.headed').checked });
+    });
+  });
+  return out;
 }
 
 /* ---- models ---- */
@@ -64,10 +95,12 @@ async function loadModels() {
 const readModels = () => $$('#models .model:checked').map((c) => c.value);
 
 function updateNote() {
-  const rows = readRows().length;
+  const rows = readRows();
   const models = readModels().length;
-  $('#go-note').textContent = rows && models
-    ? `${rows} task${rows > 1 ? 's' : ''} × ${models} model${models > 1 ? 's' : ''} = ${rows * models} runs`
+  const stores = new Set(rows.map((r) => r.url)).size;
+  $('#go-note').textContent = rows.length && models
+    ? `${rows.length} task${rows.length > 1 ? 's' : ''} across ${stores} store${stores > 1 ? 's' : ''}`
+      + ` × ${models} model${models > 1 ? 's' : ''} = ${rows.length * models} runs`
     : '';
 }
 
@@ -213,10 +246,11 @@ function render(sub) {
 
 /* ---- wiring ---- */
 
-$('#add').addEventListener('click', () => { addRow(); renumber(); updateNote(); });
-$('#clear').addEventListener('click', () => { $('#rows').innerHTML = ''; renumber(); updateNote(); });
+$('#add-store').addEventListener('click', () => { addStore(); updateNote(); });
+$('#clear').addEventListener('click', () => { $('#stores').innerHTML = ''; renumber(); updateNote(); });
 $('#go').addEventListener('click', go);
-$('#rows').addEventListener('input', updateNote);
+$('#stores').addEventListener('input', updateNote);
+$('#stores').addEventListener('change', updateNote);
 $('#models').addEventListener('change', updateNote);
 
 /** Seeded stores, cached: used to fill the rows and to name them in the report. */
@@ -229,8 +263,8 @@ async function loadStores() {
 $('#load-stores').addEventListener('click', async () => {
   try {
     const stores = await loadStores();
-    $('#rows').innerHTML = '';
-    stores.forEach((s) => addRow(s.url, s.task, false));
+    $('#stores').innerHTML = '';
+    stores.forEach((s) => addStore(s.url, [s.task]));
     renumber();
     updateNote();
   } catch (e) {
@@ -239,7 +273,7 @@ $('#load-stores').addEventListener('click', async () => {
 });
 
 (async function init() {
-  addRow();
+  addStore();
   await checkHealth($('#health'));
   await loadModels();
   await loadStores().catch(() => {});  // names are a nicety; a failure here must not block a run
